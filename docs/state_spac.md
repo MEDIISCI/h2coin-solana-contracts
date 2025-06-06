@@ -31,7 +31,7 @@ Represents the core configuration of an investment campaign.
 | `start_at` | `i64` | 8 | Investment start timestamp |
 | `end_at` | `i64` | 8 | Investment end timestamp |
 | `investment_upper_limit` | `u64` | 8 | Max USDT accepted |
-| `execute_whitelis`t | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to execute profit/refund |
+| `execute_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to execute profit/refund |
 | `update_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to update config |
 | `withdraw_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys allowed to withdraw |
 | `vault` | `Pubkey` | 32 | Vault PDA for funds |

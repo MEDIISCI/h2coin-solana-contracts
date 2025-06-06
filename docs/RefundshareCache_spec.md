@@ -72,7 +72,7 @@ PDA = find_program_address(seeds, program_id)
 *   `amount_hcoin` must be an integer (no decimal rounding).
 *   `recipient_ata` must be derived from `wallet + mint`.
 *   `stage` must be 1, 2, or 3.
-*   executed\_at = 0 means the refund for this batch has not yet been executed.
+*   executed_at = 0 means the refund for this batch has not yet been executed.
 *   This account is initialized using the seeds:
 
 ```
@@ -126,7 +126,7 @@ Generates refund entries and stores them in a new `RefundShareCache`.
 
 #### 📋 Process
 
-*   Derives PDA using investment\_id, version, batch\_id, year\_index
+*   Derives PDA using `investment_id`, `version`, `batch_id`, `year_index`
 *   Validates:
     *   `InvestmentInfo.state == Completed`
     *   `stage_ratio` is valid and non-empty
@@ -178,7 +178,7 @@ RefundShareCache enables secure, yearly, and gas-efficient H2COIN refund distrib
 
 Each batch-year cache is immutable once created.
 
-One cache per (investment\_id + version + batch\_id + year\_index) pair.oe()
+One cache per (`investment_id` + `version` + `batch_id` + `year_index`) pair.oe()
 
 ```
 stage_ratio[(stage - 1) as usize][year_index as usize]
