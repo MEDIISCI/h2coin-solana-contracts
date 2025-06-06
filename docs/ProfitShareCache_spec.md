@@ -27,27 +27,27 @@ seeds = [
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| discriminator | — | 8 | Anchor discriminator |
+| `discriminator` | — | 8 | Anchor discriminator |
 | `batch_id` | `u16` | 2 | ALT batch ID |
 | `investment_id` | `[u8; 15]` | 15 | Investment reference |
-| version | `[u8; 4]` | 4 | Version |
+| `version` | `[u8; 4]` | 4 | Version |
 | `subtotal_profit_usdt` | `u64` | 8 | Total USDT to distribute |
 | `subtotal_estimate_sol` | `u64` | 8 | Estimated SOL to execute |
 | `executed_at` | `i64` | 8 | Timestamp if executed |
 | `created_at` | `i64` | 8 | Cache creation time |
-| entries (prefix) | `Vec<ProfitEntry>` | 4 | Vec length prefix |
-| entries | — | 89 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
+| `entries (prefix)` | `Vec<ProfitEntry>` | 4 | Vec length prefix |
+| `entries` | — | 89 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
 | **Total (N=20)** | — | **1845** | Size with 20 entries |
 
 ### 🧮 Struct: `ProfitEntry` (used in `entries`) and Size Calculation
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| account\_id | `[u8; 15]` | 15 | Account ID |
-| wallet | `Pubkey` | 32 | Wallet address |
-| amount\_usdt | `u64` | 8 | USDT share |
-| ratio\_bp | `u16` | 2 | Ratio in basis points |
-| recipient\_ata | `Pubkey` | 32 | Associated token address |
+| `account_id` | `[u8; 15]` | 15 | Account ID |
+| `wallet` | `Pubkey` | 32 | Wallet address |
+| `amount_usdt` | `u64` | 8 | USDT share |
+| `ratio_bp` | `u16` | 2 | Ratio in basis points |
+| `recipient_ata` | `Pubkey` | 32 | Associated token address |
 | **Total** | — | 89 | Entry size |
 
 #### Constants

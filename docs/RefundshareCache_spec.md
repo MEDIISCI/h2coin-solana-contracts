@@ -28,28 +28,28 @@ PDA = find_program_address(seeds, program_id)
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| discriminator | — | 8 | Anchor discriminator |
-| batch\_id | `u16` | 2 | ALT batch ID |
-| year\_index | `u8` | 1 | Refund year index (0 ~ 9) |
-| investment\_id | `[u8; 15]` | 15 | Investment reference |
-| version | `[u8; 4]` | 4 | Version |
-| subtotal\_refund\_hcoin | `u64` | 8 | Total H2COIN to distribute |
-| subtotal\_estimate\_sol | `u64` | 8 | Estimated SOL to execute |
-| executed\_at | `i64` | 8 | Timestamp if executed |
-| created\_at | `i64` | 8 | Cache creation time |
-| entries (prefix) | `Vec<RefundEntry>` | 4 | Vec length prefix |
-| entries | — | 88 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
+| `discriminator` | — | 8 | Anchor discriminator |
+| `batch_id` | `u16` | 2 | ALT batch ID |
+| `year_index` | `u8` | 1 | Refund year index (0 ~ 9) |
+| `investment_id` | `[u8; 15]` | 15 | Investment reference |
+| `version` | `[u8; 4]` | 4 | Version |
+| `subtotal_refund_hcoin` | `u64` | 8 | Total H2COIN to distribute |
+| `subtotal_estimate_sol` | `u64` | 8 | Estimated SOL to execute |
+| `executed_at` | `i64` | 8 | Timestamp if executed |
+| `created_at` | `i64` | 8 | Cache creation time |
+| `entries (prefix)` | `Vec<RefundEntry>` | 4 | Vec length prefix |
+| `entries` | — | 88 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
 | **Total (N=20)** | — | **1826** | Size with 20 entries |
 
 ### 🧮 Struct: `RefundEntry` (used in `entries`) and Size Calculation
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| account\_id | `[u8; 15]` | 15 | Account ID |
-| wallet | `Pubkey` | 32 | Wallet address |
-| amount\_hcoin | `u64` | 8 | H2COIN refund amount |
-| stage | `u8` | 1 | Investment stage (1 ~ 3) |
-| recipient\_ata | `Pubkey` | 32 | Associated token address |
+| `account_id` | `[u8; 15]` | 15 | Account ID |
+| `wallet` | `Pubkey` | 32 | Wallet address |
+| `amount_hcoin` | `u64` | 8 | H2COIN refund amount |
+| `stage` | `u8` | 1 | Investment stage (1 ~ 3) |
+| `recipient_ata` | `Pubkey` | 32 | Associated token address |
 | **Total** | — | **88** | Entry size |
 
 #### Constants
@@ -79,14 +79,14 @@ PDA = find_program_address(seeds, program_id)
 ["refund_cache", investment_id, version, batch_id (LE), year_index (LE)]
 ```
 
-*   year\_index is validated using:
+*   `year_index` is validated using:
 
 ```
 let elapsed = now.saturating_sub(info.end_at);
 let expect_year_index = (elapsed / SECONDS_PER_YEAR) as u8;
 ```
 
-*   get\_refund\_percentage() helps convert stage + year → refund %:
+*   `get_refund_percentage()` helps convert stage + year → refund %:
 
 ```
 stage_ratio[(stage - 1) as usize][year_index as usize]
@@ -97,7 +97,7 @@ stage_ratio[(stage - 1) as usize][year_index as usize]
 *   `executed_at` prevents re-execution of the same batch-year.
 *   Entries are generated off-chain by authorized signers.
 *   The `execute_refund_share` instruction verifies:
-    *   3-of-5 multisignature approval from the execute whitelist
+    *   3-of-5 multi-signature approval from the execute whitelist
     *   Sufficient H2COIN and SOL balances in the vault
     *   That the cache has not already been executed
 

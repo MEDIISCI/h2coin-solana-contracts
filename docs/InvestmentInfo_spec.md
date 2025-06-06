@@ -50,20 +50,20 @@ PDA = find_program_address(seeds, program_id)
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
 | discriminator | — | 8 | Anchor account discriminator |
-| investment\_id | `[u8; 15]` | 15 | Unique investment identifier |
+| `investment_id` | `[u8; 15]` | 15 | Unique investment identifier |
 | version | `[u8; 4]` | 4 | Program version or Git commit hash |
-| investment\_type | `[u8; 16]` | 16 | Investment category/type |
-| stage\_ratio | `[[u8; 10]; MAX_STAGE]` | 30 | Refund/share ratio for each stage (3 × 10) |
-| start\_at | `i64` | 8 | Investment start timestamp |
-| end\_at | `i64` | 8 | Investment end timestamp |
-| investment\_upper\_limit | `u64` | 8 | Max USDT accepted |
-| execute\_whitelist | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to execute profit/refund |
-| update\_whitelist | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to update config |
-| withdraw\_whitelist | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys allowed to withdraw |
+| `investment_type` | `[u8; 16]` | 16 | Investment category/type |
+| `stage_ratio` | `[[u8; 10]; MAX_STAGE]` | 30 | Refund/share ratio for each stage (3 × 10) |
+| `start_at` | `i64` | 8 | Investment start timestamp |
+| `end_at` | `i64` | 8 | Investment end timestamp |
+| `investment_upper_limit` | `u64` | 8 | Max USDT accepted |
+| `execute_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to execute profit/refund |
+| `update_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to update config |
+| `withdraw_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys allowed to withdraw |
 | vault | `Pubkey` | 32 | Vault PDA for funds |
 | state | `InvestmentState` (`u16`) | 2 | Enum: `Init`, `Pending`, `Completed` |
-| is\_active | `bool` | 1 | Whether investment is active |
-| created\_at | `i64` | 8 | Creation timestamp |
+| `is_active` | `bool` | 1 | Whether investment is active |
+| `created_at` | `i64` | 8 | Creation timestamp |
 | **Total** | — | **655** | Total account size |
 
 #### Constants

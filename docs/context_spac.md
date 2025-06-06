@@ -75,7 +75,7 @@ Initializes a new `InvestmentInfo` account.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | New PDA to be initialized |
-| payer | `Signer` | ✅ | Funds rent and transaction |
+| `payer` | `Signer` | ✅ | Funds rent and transaction |
 | `system_program` | `Program<System>` | ❌ | Required for initialization |
 
 ---
@@ -87,7 +87,7 @@ Modifies an existing `InvestmentInfo` account.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Target to update |
-| payer | `Signer` | ✅ | Signer to authorize action |
+| `payer` | `Signer` | ✅ | Signer to authorize action |
 
 > ✅ Uses PDA seeds `["investment", investment_id, version]`
 
@@ -100,7 +100,7 @@ Modifies whitelist on `InvestmentInfo`.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Modified via multisig |
-| payer | `Signer` | ✅ | Must be on multisig list |
+| `payer` | `Signer` | ✅ | Must be on multisig list |
 
 ---
 
@@ -113,8 +113,8 @@ Creates a new `InvestmentRecord` for a user.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Owner of the record |
-| investment\_record | `Account<InvestmentRecord>` | ✅ (init) | Created with seeds |
-| payer | `Signer` | ✅ | Pays rent |
+| `investment_record` | `Account<InvestmentRecord>` | ✅ (init) | Created with seeds |
+| `payer` | `Signer` | ✅ | Pays rent |
 | `system_program` | `Program<System>` | ❌ | Needed for init |
 
 ---
@@ -126,7 +126,7 @@ Patches wallet of existing records with same `account_id`.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Used to validate authority |
-| payer | `Signer` | ✅ | Must be a multisig signer |
+| `payer` | `Signer` | ✅ | Must be a multisig signer |
 
 ---
 
@@ -138,7 +138,7 @@ Marks an `InvestmentRecord` as revoked.
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Parent of the record |
 | `investment_record` | `Account<InvestmentRecord>` | ✅ | Target to revoke |
-| payer | `Signer` | ✅ | Auth signer |
+| `payer` | `Signer` | ✅ | Auth signer |
 
 ---
 
@@ -151,9 +151,9 @@ Generates and stores a `ProfitShareCache` for batch.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Reference for batch |
-| cache | `Account<ProfitShareCache>` | ✅ (init\_if\_needed) | Stores estimates |
-| mint | `Account<Mint>` | ✅ | Token used (USDT) |
-| payer | `Signer` | ✅ | Funds creation |
+| `cache` | `Account<ProfitShareCache>` | ✅ (init\_if\_needed) | Stores estimates |
+| `mint` | `Account<Mint>` | ✅ | Token used (USDT) |
+| `payer` | `Signer` | ✅ | Funds creation |
 | `system_program` | `Program<System>` | ❌ | Anchor requirement |
 
 ---
@@ -165,9 +165,9 @@ Estimates refund for a batch-year.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Parent info |
-| cache | `Account<RefundShareCache>` | ✅ (init\_if\_needed) | Stores refund info |
-| mint | `Account<Mint>` | ✅ | Token (H2COIN) |
-| payer | `Signer` | ✅ | Pays creation |
+| `cache` | `Account<RefundShareCache>` | ✅ (init\_if\_needed) | Stores refund info |
+| `mint` | `Account<Mint>` | ✅ | Token (H2COIN) |
+| `payer` | `Signer` | ✅ | Pays creation |
 | `system_program` | `Program<System>` | ❌ | Required by Anchor |
 
 ---
@@ -179,11 +179,11 @@ Transfers tokens to users using cached estimates.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Source info |
-| cache | `Account<...Cache>` | ✅ | Contains entries |
-| vault | `AccountInfo` | ✅ | Token authority (PDA) |
+| `cache` | `Account<...Cache>` | ✅ | Contains entries |
+| `vault` | `AccountInfo` | ✅ | Token authority (PDA) |
 | `vault_token_account` | `Account<TokenAccount>` | ✅ | PDA-owned ATA |
-| mint | `Account<Mint>` | ✅ | Token mint (USDT/H2COIN) |
-| payer | `Signer` | ✅ | Signs tx |
+| `mint` | `Account<Mint>` | ✅ | Token mint (USDT/H2COIN) |
+| `payer` | `Signer` | ✅ | Signs tx |
 | `token_program` | `Program<Token>` | ❌ | CPI for transfer |
 | `associated_token_program` | `Program<AssociatedToken>` | ❌ | For ATA ops |
 | `system_program` | `Program<System>` | ❌ | General ops |
@@ -201,8 +201,8 @@ Transfers native SOL into the vault PDA.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Lookup vault seeds |
-| payer | `Signer` | ✅ | Pays and deposits |
-| vault | `UncheckedAccount` | ✅ (init\_if\_needed) | PDA stores lamports |
+| `payer` | `Signer` | ✅ | Pays and deposits |
+| `vault` | `UncheckedAccount` | ✅ (init\_if\_needed) | PDA stores lamports |
 | `system_program` | `Program<System>` | ❌ | System requirement |
 
 ---
@@ -214,10 +214,10 @@ Transfers SPL tokens into vault ATA.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Guides vault seeds |
-| payer | `Signer` | ✅ | Pays rent if needed |
-| vault | `AccountInfo` | ❌ | PDA owner |
-| from | `Account<TokenAccount>` | ✅ | Sender's ATA |
-| mint | `Account<Mint>` | ✅ | Token mint |
+| `payer` | `Signer` | ✅ | Pays rent if needed |
+| `vault` | `AccountInfo` | ❌ | PDA owner |
+| `from` | `Account<TokenAccount>` | ✅ | Sender's ATA |
+| `mint` | `Account<Mint>` | ✅ | Token mint |
 | `vault_token_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | Vault ATA |
 | `token_program` | `Program<Token>` | ❌ | Used for transfer |
 | `associated_token_program` | `Program<AssociatedToken>` | ❌ | Creates ATA if needed |
@@ -232,17 +232,17 @@ Transfers vault funds (SOL, USDT, H2COIN) to authorized wallets.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Lookup whitelist |
-| payer | `Signer` | ✅ | Initiator of tx |
-| vault | `AccountInfo` | ✅ | SOL vault |
-| vault\_token\_ata | `AccountInfo` | ✅ | ATA pubkey of vault |
-| vault\_usdt\_account | `Account<TokenAccount>` | ✅ | USDT vault ATA |
-| vault\_hcoin\_account | `Account<TokenAccount>` | ✅ | H2COIN vault ATA |
-| usdt\_mint | `Account<Mint>` | ✅ | USDT token mint |
-| hcoin\_mint | `Account<Mint>` | ✅ | H2COIN token mint |
+| `payer` | `Signer` | ✅ | Initiator of tx |
+| `vault` | `AccountInfo` | ✅ | SOL vault |
+| `vault_token_ata `| `AccountInfo` | ✅ | ATA pubkey of vault |
+| `vault_usdt_account` | `Account<TokenAccount>` | ✅ | USDT vault ATA |
+| `vault_hcoin_account` | `Account<TokenAccount>` | ✅ | H2COIN vault ATA |
+| `usdt_mint` | `Account<Mint>` | ✅ | USDT token mint |
+| `hcoin_mint` | `Account<Mint>` | ✅ | H2COIN token mint |
 | `token_program` | `Program<Token>` | ❌ | Token ops |
 | `associated_token_program` | `Program<AssociatedToken>` | ❌ | ATA ops |
 | `system_program` | `Program<System>` | ❌ | SYS ops |
-| rent | `Sysvar<Rent>` | ❌ | Rent exemption calc |
+| `rent` | `Sysvar<Rent>` | ❌ | Rent exemption calc |
 
 ---
 

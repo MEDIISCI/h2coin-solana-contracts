@@ -51,18 +51,18 @@ This ensures deterministic uniqueness for each investor entry.
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| discriminator | \[u8; 8\] | 8 | Anchor account discriminator |
-| batch\_id | u16 | 2 | Grouping ID for batch-based processing |
-| record\_id | u64 | 8 | Unique per-investment record ID |
-| account\_id | \[u8; 15\] | 15 | Business-level unique ID for the investor |
-| investment\_id | \[u8; 15\] | 15 | The investment this record belongs to |
-| version | \[u8; 4\] | 4 | Version of the investment program |
-| wallet | Pubkey | 32 | Investor's wallet address |
-| amount\_usdt | u64 | 8 | Invested amount in USDT |
-| amount\_hcoin | u64 | 8 | H2COIN reward amount |
-| stage | u8 | 1 | Stage (1, 2, or 3) used for ratio distribution |
-| revoked\_at | i64 | 8 | Timestamp if this record was revoked |
-| created\_at | i64 | 8 | Record creation time |
+| `discriminator` | `[u8; 8]` | 8 | Anchor account discriminator |
+| `batch_id` | u16 | 2 | Grouping ID for batch-based processing |
+| `record_id` | u64 | 8 | Unique per-investment record ID |
+| `account_id` | `[u8; 15]` | 15 | Business-level unique ID for the investor |
+| `investment_id` | `[u8; 15]` | 15 | The investment this record belongs to |
+| `version` | `[u8; 4]` | 4 | Version of the investment program |
+| `wallet` | Pubkey | 32 | Investor's wallet address |
+| `amount_usdt` | u64 | 8 | Invested amount in USDT |
+| `amount_hcoin` | u64 | 8 | H2COIN reward amount |
+| `stage` | u8 | 1 | Stage (1, 2, or 3) used for ratio distribution |
+| `revoked_at` | i64 | 8 | Timestamp if this record was revoked |
+| `created_at` | i64 | 8 | Record creation time |
 
 > ✅ **Total Size**: 128 bytes
 

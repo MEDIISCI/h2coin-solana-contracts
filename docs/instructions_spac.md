@@ -22,7 +22,7 @@ This section provides a detailed specification of each instruction function in t
 | `execute_refund_share` | Transfer H2COIN from PDA to recipients using associated token account | — | ✅ |
 | `deposit_sol_to_vault` | Transfer SOL from payer to vault PDA | — | — |
 | `deposit_token_to_vault` | Transfer token from payer to vault ATA | — | — |
-| `withdraw_from_vault` | Transfer remaining vault sol/token balance to withdrawa whitelist wallet | — | ✅ |
+| `withdraw_from_vault` | Transfer remaining vault sol/token balance to withdraw whitelist wallet | — | ✅ |
 
 ---
 

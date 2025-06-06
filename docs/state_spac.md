@@ -23,9 +23,9 @@ Represents the core configuration of an investment campaign.
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| discriminator | — | 8 | Anchor account discriminator |
+| `discriminator` | — | 8 | Anchor account discriminator |
 | `investment_id` | `[u8; 15]` | 15 | Unique investment identifier |
-| version | `[u8; 4]` | 4 | Program version or Git commit hash |
+| `version` | `[u8; 4]` | 4 | Program version or Git commit hash |
 | `investment_type` | `[u8; 16]` | 16 | Investment category/type |
 | `stage_ratio` | `[[u8; 10]; MAX_STAGE]` | 30 | Refund/share ratio for each stage (3 × 10) |
 | `start_at` | `i64` | 8 | Investment start timestamp |
@@ -34,8 +34,8 @@ Represents the core configuration of an investment campaign.
 | `execute_whitelis`t | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to execute profit/refund |
 | `update_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to update config |
 | `withdraw_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys allowed to withdraw |
-| vault | `Pubkey` | 32 | Vault PDA for funds |
-| state | `InvestmentState` (`u16`) | 2 | Enum: `Init`, `Pending`, `Completed` |
+| `vault` | `Pubkey` | 32 | Vault PDA for funds |
+| `state` | `InvestmentState` (`u16`) | 2 | Enum: `Init`, `Pending`, `Completed` |
 | `is_active` | `bool` | 1 | Whether investment is active |
 | `created_at` | `i64` | 8 | Creation timestamp |
 | **Total** | — | **787** | Total account size |
@@ -94,16 +94,16 @@ Tracks each individual’s investment entry and stores a record of each investme
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| discriminator | — | 8 | Anchor discriminator |
+| `discriminator` | — | 8 | Anchor discriminator |
 | `batch_id` | `u16` | 2 | Batch grouping ID |
 | `record_id` | `u64` | 8 | Unique investment record ID |
 | `account_id` | `[u8; 15]` | 15 | Internal account reference |
 | `investment_id` | `[u8; 15]` | 15 | Matching parent investment |
-| version | `[u8; 4]` | 4 | Program version or Git commit hash |
-| wallet | `Pubkey` | 32 | Investor wallet address |
+| `version` | `[u8; 4]` | 4 | Program version or Git commit hash |
+| `wallet` | `Pubkey` | 32 | Investor wallet address |
 | `amount_usdt` | `u64` | 8 | Invested amount in USDT |
 | `amount_hcoin` | `u64` | 8 | Allocated H2COIN (optional) |
-| stage | `u8` | 1 | Stage (1 ~ 3) |
+| `stage` | `u8` | 1 | Stage (1 ~ 3) |
 | `revoked_at` | `i64` | 8 | Timestamp of revocation |
 | `created_at` | `i64` | 8 | Record creation timestamp |
 | **Total** | — | **128** | Total account size |
@@ -121,16 +121,16 @@ This cache prevents redundant computation and ensures that profit distribution i
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| discriminator | — | 8 | Anchor discriminator |
+| `discriminator` | — | 8 | Anchor discriminator |
 | `batch_id` | `u16` | 2 | ALT batch ID |
 | `investment_id` | `[u8; 15]` | 15 | Investment reference |
-| version | `[u8; 4]` | 4 | Program version or Git commit hash |
+| `version` | `[u8; 4]` | 4 | Program version or Git commit hash |
 | `subtotal_profit_usdt` | `u64` | 8 | Total USDT to distribute |
 | `subtotal_estimate_sol` | `u64` | 8 | Estimated SOL to execute |
 | `executed_at` | `i64` | 8 | Timestamp if executed |
 | `created_at` | `i64` | 8 | Cache creation time |
-| entries (prefix) | `Vec<ProfitEntry>` | 4 | Vec length prefix |
-| entries | — | 91 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
+| `entries (prefix)` | `Vec<ProfitEntry>` | 4 | Vec length prefix |
+| `entries` | — | 91 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
 | **Total** | — | **1845** | Size with 20 entries |
 
 ### 🧾 `ProfitEntry` Struct (within `ProfitShareCache`)
@@ -140,7 +140,7 @@ Represents a single profit-sharing record inside a batch.
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
 | `account_id` | `[u8; 15]` | 15 | Account ID |
-| wallet | `Pubkey` | 32 | Wallet address |
+| `wallet` | `Pubkey` | 32 | Wallet address |
 | `amount_usdt` | `u64` | 8 | USDT share |
 | `ratio_bp` | `u16` | 2 | Ratio in basis points |
 | `recipient_ata` | `Pubkey` | 32 | Associated token address |
@@ -162,17 +162,17 @@ Stores refund estimation by year and stage for one batch.
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
-| discriminator | — | 8 | Anchor discriminator |
-| batch\_id | `u16` | 2 | ALT batch ID |
-| investment\_id | `[u8; 15]` | 15 | Investment reference |
-| version | `[u8; 4]` | 4 | Program version or Git commit hash |
+| `discriminator` | — | 8 | Anchor discriminator |
+| `batch_id` | `u16` | 2 | ALT batch ID |
+| `investment_id` | `[u8; 15]` | 15 | Investment reference |
+| `version` | `[u8; 4]` | 4 | Program version or Git commit hash |
 | `year_index` | `u8` | 1 | Refund year index |
 | `subtotal_refund_hcoin` | `u64` | 8 | Total H2COIN to refund |
 | `subtotal_estimate_sol` | `u64` | 8 | Estimated SOL to execute |
 | `executed_at` | `i64` | 8 | Timestamp if executed |
 | `created_at` | `i64` | 8 | Cache creation time |
-| entries (prefix) | `Vec<RefundEntry>` | 4 | Vec length prefix |
-| entries | — | 91 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
+| `entries (prefix)` | `Vec<RefundEntry>` | 4 | Vec length prefix |
+| `entries` | — | 91 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
 | **Total** | — | **1826** | Size with 20 entries |
 
 ### 📑 `RefundEntry`
@@ -180,10 +180,10 @@ Stores refund estimation by year and stage for one batch.
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
 | `account_id` | `[u8; 15]` | 15 | Account ID |
-| wallet | `Pubkey` | 32 | Wallet address |
+| `wallet` | `Pubkey` | 32 | Wallet address |
 | `amount_hcoin` | `u64` | 8 | H2COIN refund amount |
-| stage | `u8` | 1 | Investment stage |
-| recipient\_ata | `Pubkey` | 32 | Associated token address |
+| `stage` | `u8` | 1 | Investment stage |
+| `recipient_ata` | `Pubkey` | 32 | Associated token address |
 | **Total** | — | **88** | Entry size |
 
 #### Constants
