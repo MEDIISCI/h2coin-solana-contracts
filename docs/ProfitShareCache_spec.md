@@ -1,4 +1,4 @@
-# `📜 ProfitShareCache` Specification
+# `📜 ProfitShareCache` Specification: H2Coin Vault Share Protocol
 
 ## 📘 Module: `ProfitShareCache`
 

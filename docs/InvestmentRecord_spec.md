@@ -1,4 +1,4 @@
-# 📜 `InvestmentRecord` Specification
+# 📜 `InvestmentRecord` Specification: H2Coin Vault Share Protocol
 
 This document describes the structure, purpose, and instruction behaviors for the `InvestmentRecord` account in the H2Coin Vault Share Protocol.
 

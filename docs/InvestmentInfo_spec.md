@@ -1,4 +1,4 @@
-# 📜 `InvestmentInfo` Specification
+# 📜 `InvestmentInfo` Specification: H2Coin Vault Share Protocol
 
 ## 📘 Module: `InvestmentInfo`
 
