@@ -49,7 +49,7 @@ The **H2Coin Vault Share Protocol** leverages Solana’s **Address Lookup Table 
 
 ### 🧱 ALT Structure Design Principles
 
-*   Each ALT group supports up to **20 accounts** (e.g., 20 `InvestmentRecord` PDAs).
+*   Each ALT group supports up to **25 accounts** (e.g., 25 `InvestmentRecord` PDAs).
 *   ALT accounts are constructed externally and passed in through the transaction.
 
 ### ✅ Account Passing Strategy

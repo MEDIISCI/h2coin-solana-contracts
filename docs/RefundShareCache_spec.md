@@ -8,7 +8,7 @@ This document specifies the `RefundShareCache` structure and its role in the H2C
 
 ## 📦 Account: `RefundShareCache`
 
-The `RefundShareCache` account is used to **cache batched refund entries** for a specific investment project (`investment_id`) and a refund year. Each cache contains up to 20 refund recipients and is used to prevent duplicated execution and track stage-based refund ratios over multiple years.
+The `RefundShareCache` account is used to **cache batched refund entries** for a specific investment project (`investment_id`) and a refund year. Each cache contains up to 25 refund recipients and is used to prevent duplicated execution and track stage-based refund ratios over multiple years.
 
 ### 🧮 PDA Derivation
 
@@ -39,7 +39,7 @@ PDA = find_program_address(seeds, program_id)
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<RefundEntry>` | 4 | Vec length prefix |
 | `entries` | — | 88 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total (N=20)** | — | **1826** | Size with 20 entries |
+| **Total (N=25)** | — | **1826** | Size with 25 entries |
 
 ### 🧮 Struct: `RefundEntry` (used in `entries`) and Size Calculation
 
@@ -57,7 +57,7 @@ PDA = find_program_address(seeds, program_id)
 *   `ENTRY_SIZE =` 88 bytes
 *   `BASE_SIZE`  = 66 bytes (without entries)
 *   `SIZE` = 1826 (with entries)
-*   `MAX_ENTRIES_PER_BATCH` = 20
+*   `MAX_ENTRIES_PER_BATCH` = 25
 *   `MAX_YEAR_INDEX` = 9
 *   `ESTIMATE_SOL_BASE` = 100_000
 *   `ESTIMATE_SOL_PER_ENTRY` = 5_000
@@ -66,7 +66,7 @@ PDA = find_program_address(seeds, program_id)
 
 ## Notes
 
-*   Each `RefundShareCache` stores up to 20 entries.
+*   Each `RefundShareCache` stores up to 25 entries.
 *   `executed_at` ensures idempotent execution (only run once).
 *   Refund ratios are stage/year-based and calculated off-chain.
 *   `amount_hcoin` must be an integer (no decimal rounding).
@@ -140,7 +140,7 @@ Generates refund entries and stores them in a new `RefundShareCache`.
 
 *   Only callable once per batch-year (based on PDA existence)
 *   Refund percentages are based on stage and year ratio
-*   Maximum entries: 20
+*   Maximum entries: 25
 
 ---
 

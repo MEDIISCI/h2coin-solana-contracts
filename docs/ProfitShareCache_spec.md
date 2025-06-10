@@ -37,7 +37,7 @@ seeds = [
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<ProfitEntry>` | 4 | Vec length prefix |
 | `entries` | — | 89 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total (N=20)** | — | **1845** | Size with 20 entries |
+| **Total (N=25)** | — | **1845** | Size with 25 entries |
 
 ### 🧮 Struct: `ProfitEntry` (used in `entries`) and Size Calculation
 
@@ -55,7 +55,7 @@ seeds = [
 *   `ENTRY_SIZE` = 89 bytes
 *   `BASE_SIZE` = 65 bytes (without entries)
 *   `SIZE` = 1845 (with entries)
-*   `MAX_ENTRIES_PER_BATCH` = 20
+*   `MAX_ENTRIES_PER_BATCH` = 25
 *   `ESTIMATE_SOL_BASE` = 100\_000
 *   `ESTIMATE_SOL_PER_ENTRY` = 5\_000
 
@@ -63,7 +63,7 @@ seeds = [
 
 #### Notes
 
-*   Each `ProfitShareCache` stores up to 20 entries.
+*   Each `ProfitShareCache` stores up to 25 entries.
 *   `executed_at` ensures idempotent execution (only run once).
 *   Calculations are done off-chain and verified by 3-of-5 multisig.
 *   `ratio_bp` must be between 1 and 10,000 (basis points).
@@ -117,7 +117,7 @@ Generates profit share entries and stores them in a new `ProfitShareCache`.
 
 *   Only callable once per batch (based on PDA existence)
 *   Total must match InvestmentSummary USDT
-*   Maximum entries: 20
+*   Maximum entries: 25
 *   Ratios must sum to ~100%
 
 ---
@@ -152,7 +152,7 @@ Distributes USDT from vault to each `recipient_ata` listed in the cache.
 
 ## 📌 Summary
 
-`ProfitShareCache` enables secure, batched, and gas-efficient profit distribution for up to 20 investors per batch.
+`ProfitShareCache` enables secure, batched, and gas-efficient profit distribution for up to 25 investors per batch.
 
 Each batch is immutable once created, and prevents double execution via the `executed_at` flag.
 
