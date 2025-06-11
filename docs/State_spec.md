@@ -26,7 +26,7 @@ Represents the core configuration of an investment campaign.
 | `discriminator` | — | 8 | Anchor account discriminator |
 | `investment_id` | `[u8; 15]` | 15 | Unique investment identifier |
 | `version` | `[u8; 4]` | 4 | Program version or Git commit hash |
-| `investment_type` | `[u8; 16]` | 16 | Investment category/type |
+| `investment_type` | `InvestmentType` (enum) | 1 | Investment type: `Standard` or `Csr` |
 | `stage_ratio` | `[[u8; 10]; MAX_STAGE]` | 30 | Refund/share ratio for each stage (3 × 10) |
 | `start_at` | `i64` | 8 | Investment start timestamp |
 | `end_at` | `i64` | 8 | Investment end timestamp |
@@ -38,11 +38,30 @@ Represents the core configuration of an investment campaign.
 | `state` | `InvestmentState` (`u16`) | 2 | Enum: `Init`, `Pending`, `Completed` |
 | `is_active` | `bool` | 1 | Whether investment is active |
 | `created_at` | `i64` | 8 | Creation timestamp |
-| **Total** | — | **787** | Total account size |
+| **Total** | — | **772** | Total account size |
+
+### 🔄 `InvestmentType` Enum
+
+Represents current investment progress.
+
+| Variant | Value | Meaning |
+| --- | --- | --- |
+| `Standard` | `0` | Standard Type (default type) |
+| `Csr` | `1` | Corporate Social Responsibility Type |
+
+### 🔄 `InvestmentState` Enum
+
+Represents current investment progress.
+
+| Variant | Value | Meaning |
+| --- | --- | --- |
+| `Init` | `0` | Not yet active |
+| `Pending` | `1` | Investment ongoing |
+| `Completed` | `999` | Fully finalized |
 
 #### **Constants**
 
-*   `SIZE` = 787 bytes
+*   `SIZE` = 772 bytes
 *   `MAX_STAGE` = 3
 *   `MAX_WHITELIST_LEN` = 5
 
@@ -75,16 +94,6 @@ pub fn enforce_3_of_5_signers<'info>(
     is_update: bool
 ) -> Result<()>
 ```
-
-### 🔄 `InvestmentState` Enum
-
-Represents current investment progress.
-
-| Variant | Value | Meaning |
-| --- | --- | --- |
-| `Init` | `0` | Not yet active |
-| `Pending` | `1` | Investment ongoing |
-| `Completed` | `999` | Fully finalized |
 
 ---
 
@@ -130,8 +139,8 @@ This cache prevents redundant computation and ensures that profit distribution i
 | `executed_at` | `i64` | 8 | Timestamp if executed |
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<ProfitEntry>` | 4 | Vec length prefix |
-| `entries` | — | 91 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total** | — | **2294** | Size with 30 entries |
+| `entries` | — | 89 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
+| **Total** | — | **2735** | Size with 30 entries |
 
 ### 🧾 `ProfitEntry` Struct (within `ProfitShareCache`)
 
@@ -150,7 +159,7 @@ Represents a single profit-sharing record inside a batch.
 
 *   `ENTRY_SIZE` = 89 bytes
 *   `Basic SIZE` = 65 bytes
-*   `Total SIZE` = 2294 bytes
+*   `Total SIZE` = 2735 bytes
 *   `MAX_ENTRIES_PER_BATCH` = 30 entries
 
 Returns the refund percentage based on stage and year index. Returns 0 if inputs are invalid.
@@ -174,7 +183,7 @@ Stores refund estimation by year and stage for one batch.
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<RefundEntry>` | 4 | Vec length prefix |
 | `entries` | — | 91 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total** | — | **2270** | Size with 30 entries |
+| **Total** | — | **2706** | Size with 30 entries |
 
 ### 📑 `RefundEntry`
 
@@ -191,7 +200,7 @@ Stores refund estimation by year and stage for one batch.
 
 *   `ENTRY_SIZE` = 88 bytes
 *   `Basic SIZE` = 66 bytes
-*   `Total SIZE` = 2270 bytes
+*   `Total SIZE` = 2706 bytes
 *   `MAX_ENTRIES_PER_BATCH` = 30 entries
 
 Returns the refund percentage based on stage and year index. Returns 0 if inputs are invalid.
