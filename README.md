@@ -8,56 +8,56 @@ It ensures asset safety through multi-signature authorization, batch processing 
 
 ## 🌟 Project Objectives
 
-* ✅ Enable decentralized profit and refund distribution
-* ✅ Support investor batch management with ALT
-* ✅ Enforce 3-of-5 multisig on all critical actions
-* ✅ Provide replay protection via cache locking
-* ✅ Ensure upgrade-safety and deterministic state control
+*   ✅ Enable decentralized profit and refund distribution
+*   ✅ Support investor batch management with ALT
+*   ✅ Enforce 3-of-5 multisig on all critical actions
+*   ✅ Provide replay protection via cache locking
+*   ✅ Ensure upgrade-safety and deterministic state control
 
 ## ⚙️ Protocol Architecture
 
 ### Core Components:
 
-* `InvestmentInfo`: Metadata for each investment campaign
-* `InvestmentRecord`: Tracks investor participation per stage/batch
-* `ProfitShareCache`: Stores estimated profit per batch (one-time)
-* `RefundShareCache`: Caches refund amounts based on yearly stages
-* `Vault PDA`: Holds SOL, USDT, and H2COIN for secure distribution
+*   `InvestmentInfo`: Metadata for each investment campaign
+*   `InvestmentRecord`: Tracks investor participation per stage/batch
+*   `ProfitShareCache`: Stores estimated profit per batch (one-time)
+*   `RefundShareCache`: Caches refund amounts based on yearly stages
+*   `Vault PDA`: Holds SOL, USDT, and H2COIN for secure distribution
 
 ### Entry Points (Instructions):
 
-| Instruction              | Purpose                                        |
-| ------------------------ | ---------------------------------------------- |
-| `initialize`             | Initialize investment config and whitelist     |
-| `update_investment_info` | Update metadata and version control            |
-| `add_investment_record`  | Add a new investor record                      |
-| `estimate_profit_share`  | Estimate per-investor profit and cache result  |
-| `execute_profit_share`   | Perform USDT transfer to investors using cache |
-| `estimate_refund_share`  | Estimate yearly refunds per stage              |
-| `execute_refund_share`   | Send H2COIN refunds using stage-based logic    |
-| `withdraw_from_vault`    | Withdraw tokens/SOL to approved recipients     |
+| Instruction | Purpose |
+| --- | --- |
+| `initialize` | Initialize investment config and whitelist |
+| `update_investment_info` | Update metadata and version control |
+| `add_investment_record` | Add a new investor record |
+| `estimate_profit_share` | Estimate per-investor profit and cache result |
+| `execute_profit_share` | Perform USDT transfer to investors using cache |
+| `estimate_refund_share` | Estimate yearly refunds per stage |
+| `execute_refund_share` | Send H2COIN refunds using stage-based logic |
+| `withdraw_from_vault` | Withdraw tokens/SOL to approved recipients |
 
 > 🔐 All critical instructions require 3-of-5 whitelist signer validation.
 
 ## 🚀 Deployment & Testing
 
-### 1. **Set Up Devent Environment**
+### 1\. **Set Up Devent Environment**
 
-```bash
+```
 solana config set --url https://api.devnet.solana.com
 solana config get
 ```
 
-### 2. **Build & Deploy**
+### 2\. **Build & Deploy**
 
-```bash
+```
 anchor build
 anchor deploy
 ```
 
-### 3. **Run Tests**
+### 3\. **Run Tests**
 
-```bash
+```
 anchor test
 ```
 
@@ -67,43 +67,45 @@ Tests are written using Mocha + Chai and simulate multi-batch execution with rea
 
 ### Build Program
 
-```bash
+```
 anchor build
 ```
 
 ### Deploy to Localnet
 
-```bash
+```
 anchor deploy
 ```
 
 ### Run Tests
 
-```bash
+```
 anchor test
 ```
 
 ### Upgrade Program
 
-```bash
+```
 anchor upgrade ./target/deploy/h2coin_vault_share.so --program-id <PROGRAM_ID>
 ```
 
 ## 📖 Further Documentation
 
-| Document                                                      | Description                                      |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| [`Architecture.md`](./docs/Architecture.md)                   | Protocol design architecture overview            |
-| [`Security_model_spec.md`](./docs/Security_model_spec.md)     | Protocol's security architecture and assumptions |
-| [`State_spec.md`](./docs/State_spec.md)                       | Full list of PDA account states                  |
-| [`Context_spec.md`](./docs/Context_spec.md)                   | Anchor context structures                        |
-| [`Event_spec.md`](./docs/Event_spec.md)                       | Events emitted by the program                    |
-| [`instructions_spec.md`](./docs/instructions_spec.md)         | All instruction interfaces and constraints       |
-| [`ProfitShareCache_spec.md`](./docs/ProfitShareCache_spec.md) | Structure and purpose of profit share cache      |
-| [`RefundShareCache_spec.md`](./docs/RefundShareCache_spec.md) | Refund logic and refund batch design             |
-| [`InvestmentInfo_spec.md`](./docs/InvestmentInfo_spec.md)     | Investment metadata definition                   |
-| [`InvestmentRecord_spec.md`](./docs/InvestmentRecord_spec.md) | Investor participation tracking                  |
-| [`specifications.md`](./docs/specifications.md)               | Cross-module specifications and notes            |
+| Document | Description |
+| --- | --- |
+| [`Architecture.md`](./docs/Architecture.md) | Protocol design architecture overview |
+| [`Security_model_spec.md`](./docs/Security_model_spec.md) | Protocol's security architecture and assumptions |
+| [`State_spec.md`](./docs/State_spec.md) | Full list of PDA account states |
+| [`Context_spec.md`](./docs/Context_spec.md) | Anchor context structures |
+| [`Event_spec.md`](./docs/Event_spec.md) | Events emitted by the program |
+| [`instructions_spec.md`](./docs/instructions_spec.md) | All instruction interfaces and constraints |
+| [`ProfitShareCache_spec.md`](./docs/ProfitShareCache_spec.md) | Structure and purpose of profit share cache |
+| [`RefundShareCache_spec.md`](./docs/RefundShareCache_spec.md) | Refund logic and refund batch design |
+| [`InvestmentInfo_spec.md`](./docs/InvestmentInfo_spec.md) | Investment metadata definition |
+| [`InvestmentRecord_spec.md`](./docs/InvestmentRecord_spec.md) | Investor participation tracking |
+| [`Error_sped.md`](./docs/Error_spec.md) | Error details |
+| [`AddressLookupTable_spec.md`](./docs/AddressLookupTable_spec.md) | Address Lookup Table (ALT) purpose |
+| [`specifications.md`](./docs/specifications.md) | Cross-module specifications and notes |
 
 ---
 
