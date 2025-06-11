@@ -94,17 +94,17 @@ anchor upgrade ./target/deploy/h2coin_vault_share.so --program-id <PROGRAM_ID>
 | Document | Description |
 | --- | --- |
 | [`Architecture.md`](./docs/Architecture.md) | Protocol design architecture overview |
+| [`AddressLookupTable_spec.md`](./docs/AddressLookupTable_spec.md) | Address Lookup Table (ALT) purpose |
 | [`Security_model_spec.md`](./docs/Security_model_spec.md) | Protocol's security architecture and assumptions |
 | [`State_spec.md`](./docs/State_spec.md) | Full list of PDA account states |
 | [`Context_spec.md`](./docs/Context_spec.md) | Anchor context structures |
 | [`Event_spec.md`](./docs/Event_spec.md) | Events emitted by the program |
+| [`Error_sped.md`](./docs/Error_spec.md) | Error details |
 | [`instructions_spec.md`](./docs/instructions_spec.md) | All instruction interfaces and constraints |
-| [`ProfitShareCache_spec.md`](./docs/ProfitShareCache_spec.md) | Structure and purpose of profit share cache |
-| [`RefundShareCache_spec.md`](./docs/RefundShareCache_spec.md) | Refund logic and refund batch design |
 | [`InvestmentInfo_spec.md`](./docs/InvestmentInfo_spec.md) | Investment metadata definition |
 | [`InvestmentRecord_spec.md`](./docs/InvestmentRecord_spec.md) | Investor participation tracking |
-| [`Error_sped.md`](./docs/Error_spec.md) | Error details |
-| [`AddressLookupTable_spec.md`](./docs/AddressLookupTable_spec.md) | Address Lookup Table (ALT) purpose |
+| [`ProfitShareCache_spec.md`](./docs/ProfitShareCache_spec.md) | Structure and purpose of profit share cache |
+| [`RefundShareCache_spec.md`](./docs/RefundShareCache_spec.md) | Refund logic and refund batch design |
 | [`specifications.md`](./docs/specifications.md) | Cross-module specifications and notes |
 
 ---
