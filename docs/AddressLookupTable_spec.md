@@ -11,8 +11,8 @@ ALT is used to efficiently support batched investor processing and reduce transa
 ## 🧠 ALT Design Principles
 
 * In theory, each ALT can hold up to **256 addresses**, but in practice, **usable address count is often lower** due to Solana's **1232-byte transaction size limit**.
-* Empirical testing shows that up to **25 writable records** can be reliably executed using ALT without exceeding transaction limits.
-* Based on program size, number of remaining accounts, and token transfer logic, typical ALT usage in this protocol is capped at **approximately 25 addresses per transaction**.
+* Empirical testing shows that up to **30 writable records** can be reliably executed using ALT without exceeding transaction limits.
+* Based on program size, number of remaining accounts, and token transfer logic, typical ALT usage in this protocol is capped at **approximately 25–30 addresses per transaction**.
 * ALT is tightly scoped to a single investment batch by convention.
 * ALT is read-only after creation and must be recreated to change.
 * ALT is used to derive a full list of recipient ATAs during estimation and execution.
@@ -20,6 +20,40 @@ ALT is used to efficiently support batched investor processing and reduce transa
 > ⚠️ ALT **cannot replace** `remaining_accounts` when **writability is required** — writable accounts must still be passed explicitly.
 
 > 🔎 **Clarification:** Although ALT accounts may hold many addresses, **only a limited number can be resolved within a single transaction** due to Solana runtime limits on transaction size and compute budget.
+
+---
+
+## 📏 Transaction Size Impact Analysis
+
+To understand the value of ALT and why it’s required, we analyze the memory cost:
+
+### 🔹 `remaining_accounts` Size Cost
+
+| Field        | Size (Bytes) |
+| ------------ | ------------ |
+| `pubkey`     | 32           |
+| `isSigner`   | 1            |
+| `isWritable` | 1            |
+| **Total**    | **34**       |
+
+* If you include 50 accounts:
+
+  * `30 × 34 = 1020 bytes` 🟢 within Solana's 1232-byte limit
+  * `50 × 34 = 1700 bytes` ❌ exceeds Solana's 1232-byte limit
+
+### 🔹 ALT Reference Size
+
+* ALT accounts resolve addresses with only **1–2 bytes per address** under-the-hood.
+* This enables massive savings **but only for read-only access**.
+* Writable accounts **must still be passed explicitly** in `remaining_accounts`.
+
+### 🧪 Practical Limits
+
+| Method                    | Max Accounts | Notes                                |
+| ------------------------- | ------------ | ------------------------------------ |
+| Only `remaining_accounts` | \~35–40      | Fully manual, no ALT                 |
+| ALT + Writable ATAs       | \~30         | Writable ATAs still required         |
+| ALT (read-only only)      | Up to 256    | Only if no writable access is needed |
 
 ---
 

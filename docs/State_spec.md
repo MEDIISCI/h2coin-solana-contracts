@@ -131,7 +131,7 @@ This cache prevents redundant computation and ensures that profit distribution i
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<ProfitEntry>` | 4 | Vec length prefix |
 | `entries` | — | 91 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total** | — | **2294** | Size with 25 entries |
+| **Total** | — | **2294** | Size with 30 entries |
 
 ### 🧾 `ProfitEntry` Struct (within `ProfitShareCache`)
 
@@ -151,7 +151,7 @@ Represents a single profit-sharing record inside a batch.
 *   `ENTRY_SIZE` = 89 bytes
 *   `Basic SIZE` = 65 bytes
 *   `Total SIZE` = 2294 bytes
-*   `MAX_ENTRIES_PER_BATCH` = 25 entries
+*   `MAX_ENTRIES_PER_BATCH` = 30 entries
 
 Returns the refund percentage based on stage and year index. Returns 0 if inputs are invalid.
 
@@ -174,7 +174,7 @@ Stores refund estimation by year and stage for one batch.
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<RefundEntry>` | 4 | Vec length prefix |
 | `entries` | — | 91 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total** | — | **2270** | Size with 25 entries |
+| **Total** | — | **2270** | Size with 30 entries |
 
 ### 📑 `RefundEntry`
 
@@ -192,7 +192,7 @@ Stores refund estimation by year and stage for one batch.
 *   `ENTRY_SIZE` = 88 bytes
 *   `Basic SIZE` = 66 bytes
 *   `Total SIZE` = 2270 bytes
-*   `MAX_ENTRIES_PER_BATCH` = 25 entries
+*   `MAX_ENTRIES_PER_BATCH` = 30 entries
 
 Returns the refund percentage based on stage and year index. Returns 0 if inputs are invalid.
 
