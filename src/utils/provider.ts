@@ -1,6 +1,6 @@
-import * as Anchor from "@coral-xyz/anchor";
 import fs from "fs";
 import * as dotenv from "dotenv";
+import * as Anchor from "@coral-xyz/anchor";
 
 dotenv.config(); // Load .env file
 
