@@ -19,7 +19,7 @@ target/release
 target/build
 target/types
 target/sbf-solana-solana
-target/.rustc_info-solana
+target/.rustc_info.json
 .yarn
 *.gz
 *.log
