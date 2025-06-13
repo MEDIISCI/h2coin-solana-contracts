@@ -41,22 +41,40 @@ It ensures asset safety through multi-signature authorization, batch processing 
 
 ## 🚀 Deployment & Testing
 
-### 1\. **Set Up Devent Environment**
+### 1\. **Authority Keypair**
+```
+solana address --keypair ./assets/deploy/devnet-keypair.json 
+
+9HJ4pswgZDcWYkqCxxXhmE4KLRP1i4ZXhcGYgq5sDBDG
+```
+### 2\. **Program id Keypiar**
+```
+solana address --keypair ./target/deploy/h2coin_vault_share-keypair.json 
+
+ALjifiKwvSzKLfpebFZ185b3mLAxroEvxYXCcy9Lzw2B
+```
+### 3\. **Set Up Devent Environment**
 
 ```
 solana config set --url https://api.devnet.solana.com
 solana config set --keypair ./assets/deploy/devnet-keypair.json
 solana config get
+
+Config File: ~/.config/solana/cli/config.yml
+RPC URL: https://api.devnet.solana.com 
+WebSocket URL: wss://api.devnet.solana.com/ (computed)
+Keypair Path: ./assets/deploy/devnet-keypair.json 
+Commitment: confirmed 
 ```
 
-### 2\. **Build & Deploy**
+### 4\. **Build & Deploy**
 
 ```
 anchor build
 anchor deploy
 ```
 
-### 3\. **Run Tests**
+### 5\. **Run Tests**
 
 ```
 anchor test
