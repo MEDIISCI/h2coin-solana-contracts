@@ -10,5 +10,5 @@
     "strict": true,                            // Safer, more secure typings
     "outDir": "dist",                           // Output directory for compiled files    
   },
-  "include": ["tests/**/*.ts", "scripts/**/*.ts"]
+  "include": ["tests/**/*.ts"]
 }
