@@ -88,7 +88,13 @@ Keypair Path: ./assets/deploy/devnet-keypair.json
 Commitment: confirmed 
 ```
 
-### 4\. **Build Program**
+### 4\. **Fund Your Wallet with Test SOL**
+Use this to receive 5 test SOL from the Devnet faucet.
+```
+solana airdrop 5
+```
+
+### 5\. **Build Program**
 
 Compile the Anchor smart contract:
 
@@ -101,7 +107,7 @@ This generates:
 *   The .so binary for deployment
 *   The IDL at target/idl/h2coin\_vault\_share.json
 
-### 5\. Deploy to Devnet
+### 6\. Deploy to Devnet
 
 Deploy the compiled program to Solana Devnet:
 
@@ -123,7 +129,7 @@ Signature: 5RcFzKuy39gafH9FC4E1Rh34Qvf8F7XDbSUuZrCSyjwWAEjWywQTa8b8NLmn5oGsP5D9R
 Deploy success
 ```
 
-### 5\. **Run Tests**
+### 7\. **Run Tests**
 
 Tests are written using **Mocha** + **Chai**, simulating the full lifecycle of an investment project.
 
@@ -141,7 +147,7 @@ To execute all tests:
 npx mocha 
 ```
 
-### 6\. **Upgrade the Program (if needed)**
+### 8\. **Upgrade the Program (if needed)**
 
 Redeploy after changes using:
 
