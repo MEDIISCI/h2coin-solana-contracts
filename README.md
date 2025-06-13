@@ -2,27 +2,27 @@
 
 ## 🤩 Overview
 
-The **H2Coin Vault Share Protocol** is a secure and scalable Solana-based smart contract system designed to manage decentralized investment, profit sharing, and refund distribution.
+The **H2Coin Vault Share Protocol** is a secure, scalable smart contract system built on Solana. It facilitates decentralized investment management, automated profit sharing, and stage-based refund distribution.
 
-It ensures asset safety through multi-signature authorization, batch processing via Address Lookup Tables (ALT), and strict constraint validation. The protocol is ideal for managing DAO treasuries, investor payouts, and time-based reward mechanisms.
+The protocol emphasizes asset security through 3-of-5 multi-signature authorization, efficient batch processing using Address Lookup Tables (ALT), and strict on-chain validation. It is especially suitable for managing DAO treasuries, investor payouts, and time-based reward distribution.
 
-## 🌟 Project Objectives
+## 🌟 Project Goals
 
-*   ✅ Enable decentralized profit and refund distribution
-*   ✅ Support investor batch management with ALT
-*   ✅ Enforce 3-of-5 multisig on all critical actions
-*   ✅ Provide replay protection via cache locking
-*   ✅ Ensure upgrade-safety and deterministic state control
+*   ✅ Support decentralized profit sharing and refund distribution
+*   ✅ Manage investment records in batches using ALT
+*   ✅ Enforce 3-of-5 multisig for all critical operations
+*   ✅ Prevent duplicate execution with cache-based replay protection
+*   ✅ Ensure upgrade-safe, deterministic state transitions
 
 ## ⚙️ Protocol Architecture
 
 ### Core Components:
 
-*   `InvestmentInfo`: Metadata for each investment campaign
-*   `InvestmentRecord`: Tracks investor participation per stage/batch
-*   `ProfitShareCache`: Stores estimated profit per batch (one-time)
-*   `RefundShareCache`: Caches refund amounts based on yearly stages
-*   `Vault PDA`: Holds SOL, USDT, and H2COIN for secure distribution
+*   `InvestmentInfo`: Defines metadata for each investment campaign
+*   `InvestmentRecord`: Records individual investor participation per stage and batch
+*   `ProfitShareCache`: Caches estimated profits for each batch (immutable once created)
+*   `RefundShareCache`: Stores stage-based refund amounts (typically yearly)
+*   `Vault PDA`: Holds SOL, USDT, and H2COIN used for secure on-chain distributions
 
 ### Entry Points (Instructions):
 
@@ -42,17 +42,21 @@ It ensures asset safety through multi-signature authorization, batch processing 
 ## 🚀 Deployment & Testing
 
 ### 1\. **Authority Keypair**
+
 ```
 solana address --keypair ./assets/deploy/devnet-keypair.json 
 
 9HJ4pswgZDcWYkqCxxXhmE4KLRP1i4ZXhcGYgq5sDBDG
 ```
+
 ### 2\. **Program id Keypiar**
+
 ```
 solana address --keypair ./target/deploy/h2coin_vault_share-keypair.json 
 
 ALjifiKwvSzKLfpebFZ185b3mLAxroEvxYXCcy9Lzw2B
 ```
+
 ### 3\. **Set Up Devent Environment**
 
 ```
