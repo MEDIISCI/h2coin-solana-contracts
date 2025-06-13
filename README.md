@@ -45,6 +45,7 @@ It ensures asset safety through multi-signature authorization, batch processing 
 
 ```
 solana config set --url https://api.devnet.solana.com
+solana config set --keypair ./assets/deploy/devnet-keypair.json
 solana config get
 ```
 
@@ -75,6 +76,16 @@ anchor build
 
 ```
 anchor deploy
+
+Deploying cluster: https://api.devnet.solana.com
+Upgrade authority: ./assets/deploy/devnet-keypair.json
+Deploying program "h2coin_vault_share"...
+Program path: /home/cheny/node_project/h2coin-solana-contracts/target/deploy/h2coin_vault_share.so...
+Program Id: ALjifiKwvSzKLfpebFZ185b3mLAxroEvxYXCcy9Lzw2B
+
+Signature: 5RcFzKuy39gafH9FC4E1Rh34Qvf8F7XDbSUuZrCSyjwWAEjWywQTa8b8NLmn5oGsP5D9Rxz39N1hiZm2Fd8wusvc
+
+Deploy success
 ```
 
 ### Run Tests

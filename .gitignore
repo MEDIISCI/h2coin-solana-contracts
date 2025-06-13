@@ -1,0 +1,26 @@
+# OS dependent files
+Thumbs.db
+.DS_Store
+
+# IDE dependent files
+.idea
+.vscode
+
+# Runtime dependent files
+.anchor
+.local-ledger
+
+local-ledger
+node_modules
+test-ledger
+target/debug
+target/idl
+target/release
+target/build
+target/types
+target/sbf-solana-solana
+target/.rustc_info-solana
+.yarn
+*.gz
+*.log
+**/*.rs.bk

@@ -1,0 +1,31 @@
+[package]
+name = "h2coin_vault_share"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+# Anchor helper features
+[features]
+default = ["devnet"]
+localnet = []
+devnet = []
+mainnet = []
+cpi = ["no-entrypoint"]
+no-idl = []
+custom-heap = []
+custom-panic =[]
+anchor-debug = []
+no-entrypoint = []
+no-log-ix-name =[]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+
+[dependencies]
+anchor-lang = { version = ">=0.31.1", features = ["init-if-needed"] }
+anchor-spl = { version = ">=0.31.1", features = ["token", "associated_token"] }
+anchor-attribute-program = "0.31.1"
+spl-associated-token-account = "7.0.0"
+spl-token = "8.0.0"

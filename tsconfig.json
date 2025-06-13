@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                        // Modern async/await, bigint support
+    "module": "commonjs",                      // Required for Node.js/Anchor
+    "lib": ["ES2020"],                         // Include Promise, BigInt, etc.
+    "types": ["mocha", "chai"],                // Needed for test type support
+    "typeRoots": ["./node_modules/@types"],    // Look for types here
+    "esModuleInterop": true,                   // Enable import compatibility
+    "resolveJsonModule": true,                 // Allow importing JSON (e.g., IDL)
+    "strict": true,                            // Safer, more secure typings
+    "outDir": "dist",                           // Output directory for compiled files    
+  },
+  "include": ["tests/**/*.ts", "scripts/**/*.ts"]
+}
