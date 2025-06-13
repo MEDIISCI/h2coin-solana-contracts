@@ -136,7 +136,7 @@ Tests are written using **Mocha** + **Chai**, simulating the full lifecycle of a
 The tests cover:
 
 *   **Initialization of Investment Info** – screates a new investment entry with ID, version, investment type, whitelist signers, and per-stage refund ratios
-*   **Batch-based investment Record Setup** – registers investor records by `batch_id`, `record_id, account_id, wallet, amount and stage`
+*   **Batch-based investment Record Setup** – registers investor records by `batch_id`, `record_id`, `account_id`, `wallet`, `amount` and `stage`
 *   **Profit & Refund Share Estimation** – calculates cache entries per batch base on stage and year-index
 *   **Execution Flow** – transfers USDT/H2COIN to investors using multi-sig and vault authority
 *   **Whitelist Signer Logic** – enforces 3-of-5 authorization rules for secure execution
