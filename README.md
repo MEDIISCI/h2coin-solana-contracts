@@ -40,10 +40,14 @@ The protocol emphasizes asset security through 3-of-5 multi-signature authorizat
 > 🔐 All critical instructions require 3-of-5 whitelist signer validation.
 
 ## 🚀 Deployment & Testing
-
 This section outlines the steps to configure your environment, build, deploy, and test the H2Coin Vault Share Protocol on Solana Devnet.
 
-### 1\. **Generate or Specify Authority Keypair**
+### 1\. **Install project dependencies**
+```
+yarn install
+```
+
+### 2\. **Generate or Specify Authority Keypair**
 
 This keypair acts as the deploy authority and signer for transactions:
 
@@ -53,7 +57,7 @@ solana address --keypair ./assets/deploy/devnet-keypair.json
 9HJ4pswgZDcWYkqCxxXhmE4KLRP1i4ZXhcGYgq5sDBDG
 ```
 
-### 2\. **Program id Keypiar**
+### 3\. **Program id Keypiar**
 
 This is the keypair representing the deployed program’s identity:
 
@@ -63,8 +67,7 @@ solana address --keypair ./target/deploy/h2coin_vault_share-keypair.json
 ALjifiKwvSzKLfpebFZ185b3mLAxroEvxYXCcy9Lzw2B
 ```
 
-### 3\. **Set Up Devent Environment**
-
+### 4\. **Set Up Devent Environment**
 Configure Solana CLI to use Devnet and your deploy authority:
 
 ```
@@ -88,13 +91,13 @@ Keypair Path: ./assets/deploy/devnet-keypair.json
 Commitment: confirmed 
 ```
 
-### 4\. **Fund Your Wallet with Test SOL**
+### 5\. **Fund Your Wallet with Test SOL**
 Use this to receive 5 test SOL from the Devnet faucet.
 ```
 solana airdrop 5
 ```
 
-### 5\. **Build Program**
+### 6\. **Build Program**
 
 Compile the Anchor smart contract:
 
@@ -107,7 +110,7 @@ This generates:
 *   The .so binary for deployment
 *   The IDL at target/idl/h2coin\_vault\_share.json
 
-### 6\. Deploy to Devnet
+### 7\. Deploy to Devnet
 
 Deploy the compiled program to Solana Devnet:
 
@@ -129,7 +132,7 @@ Signature: 5RcFzKuy39gafH9FC4E1Rh34Qvf8F7XDbSUuZrCSyjwWAEjWywQTa8b8NLmn5oGsP5D9R
 Deploy success
 ```
 
-### 7\. **Run Tests**
+### 8\. **Run Tests**
 
 Tests are written using **Mocha** + **Chai**, simulating the full lifecycle of an investment project.
 
@@ -147,7 +150,7 @@ To execute all tests:
 npx mocha 
 ```
 
-### 8\. **Upgrade the Program (if needed)**
+### 9\. **Upgrade the Program (if needed)**
 
 Redeploy after changes using:
 
