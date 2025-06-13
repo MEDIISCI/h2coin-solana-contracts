@@ -28,8 +28,8 @@ The protocol emphasizes asset security through 3-of-5 multi-signature authorizat
 
 | Instruction | Purpose |
 | --- | --- |
-| `initialize` | Initialize investment config and whitelist |
-| `update_investment_info` | Update metadata and version control |
+| `initialize_investment_info` | Initialize investment config and whitelist |
+| `completed_investment_info` | Mark the investment as completed state and prevent any further add or update operations |
 | `add_investment_record` | Add a new investor record |
 | `estimate_profit_share` | Estimate per-investor profit and cache result |
 | `execute_profit_share` | Perform USDT transfer to investors using cache |
@@ -175,4 +175,4 @@ anchor upgrade ./target/deploy/h2coin_vault_share.so --program-id ALjifiKwvSzKLf
 
 ---
 
-Maintained by the H2Coin Vault Share Protocol Team.
+Maintained by the H2Coin Vault Share Protocol Team.met
