@@ -8,11 +8,34 @@ The protocol emphasizes asset security through 3-of-5 multi-signature authorizat
 
 ## 🌟 Project Goals
 
-*   ✅ Support decentralized profit sharing and refund distribution
-*   ✅ Manage investment records in batches using ALT
-*   ✅ Enforce 3-of-5 multisig for all critical operations
-*   ✅ Prevent duplicate execution with cache-based replay protection
-*   ✅ Ensure upgrade-safe, deterministic state transitions
+*   Support decentralized profit sharing and refund distribution
+*   Manage investment records in batches using ALT
+*   Enforce 3-of-5 multisig for all critical operations
+*   Prevent duplicate execution with cache-based replay protection
+*   Ensure upgrade-safe, deterministic state transitions
+
+## 🛠️ Contract Features
+
+*   **Investment Stage Management**
+    *   Support for multiple investment stages (up to 3 stages)
+    *   Stage-specific ratio calculations for refunds
+    *   Investment upper limit controls
+*   **Profit Distribution System**
+    *   Automated USDT profit distribution
+    *   Batch processing for efficient distribution
+    *   Cache-based distribution estimation
+    *   3-of-5 multisig authorization for security
+*   **Refund Distribution System**
+    *   10-year refund period (starting from year 4)
+    *   Stage-based refund ratio calculations
+    *   H2COIN token distribution
+    *   Automated refund tracking
+*   **Security Features**
+    *   3-of-5 multisig authorization
+    *   Whitelist management for different operations
+    *   Cache expiration protection (25 days)
+    *   Input validation and error handling
+    *   Secure fund management through PDAs
 
 ## ⚙️ Protocol Architecture
 
