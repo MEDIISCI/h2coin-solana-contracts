@@ -37,7 +37,6 @@ describe("Investment Info", async function() {
 		const version = stringToFixedU8Array(__version, 4, "hex");
 		R.version = version;
 
-
 		const investmentType = { csr:{} };
 
 		const stageRatioRows = [
