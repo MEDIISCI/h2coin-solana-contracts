@@ -586,19 +586,6 @@ where
 {
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
-
-
-    // 0. Validate investment info PDA
-    let (expected_info_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            info.investment_id.as_ref(),
-            info.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_info_pda, ErrorCode::InvalidInvestmentInfoPda);
-
     
     // 1. Validate investment is active and completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
@@ -615,70 +602,55 @@ where
     let mut updated_count = 0;
 
     for acc_info in records {
+        // Skip if not owned by this program
         if acc_info.owner != ctx.program_id {
-            msg!("⚠️ Wrong program_id: {}", acc_info.owner);
             continue;
         }
 
         // deserialize from account data
-        let mut record_data = acc_info.try_borrow_mut_data()?;
-        let mut record = InvestmentRecord::try_deserialize(&mut &record_data[..])?;
+        let mut data = acc_info.try_borrow_mut_data()?;
+        let mut record = InvestmentRecord::try_deserialize(&mut &data[..])?;
 
-        // Validate investment record PDA
-        let (expected_record_pda, _bump) = Pubkey::find_program_address(
-            &[
-                b"record",
-                info.investment_id.as_ref(),
-                info.version.as_ref(),
-                record.batch_id.to_le_bytes().as_ref(),
-                record.record_id.to_le_bytes().as_ref(),
-                record.account_id.as_ref(),
-            ],
-            ctx.program_id,
-        );
-
-        // skip non-matching records
-        if acc_info.key() != expected_record_pda {
-            msg!("⚠️ Record PDA mismatch!: {:?}", acc_info.key());
-            continue;
-        }
 
         if record.account_id != account_id {
-            msg!("⚠️ account_id mismatch!: {:?}", record.account_id);
             continue;
         }
 
         if record.investment_id != info.investment_id {
-            msg!("⚠️ investment_id mismatch!: {:?}", record.investment_id);
+            continue;
+        }
+
+        if record.version != info.version {
             continue;
         }
 
         if record.wallet == new_wallet {
-            msg!("⚠️ New wallet is the same as old wallet: {}", record.wallet);
             continue;
         }
 
-        // ✅ 修改資料
-        msg!("🟢 Updating record {} wallet from {} to {}", record.record_id, record.wallet, new_wallet);
+        // update the wallet
         record.wallet = new_wallet;
 
         // serialize back to account data
-        record.try_serialize(&mut &mut record_data[..])?;
-        updated_count += 1;
-        msg!("🟢 record update count: {}", updated_count);
+        record.try_serialize(&mut &mut data[..])?;
 
-        emit!(InvestmentRecordWalletUpdated {
-            investment_id: info.investment_id,
-            version: info.version,
-            record_id: record.record_id,
-            account_id: record.account_id,
-            new_wallet,
-            updated_by: ctx.accounts.payer.key(),
-            updated_at: now,
-            signers: signer_keys.clone(),
-        });
+        //increment updated count
+        updated_count += 1;
+        
     }
 
+    emit!(InvestmentRecordWalletUpdated {
+        investment_id: info.investment_id,
+        version: info.version,
+        account_id,
+        new_wallet,
+        updated_by: ctx.accounts.payer.key(),
+        updated_at: now,
+        signers: signer_keys.clone(),
+    });
+
+
+    msg!("🟢 record update count: {}", updated_count);
     require!(updated_count > 0, ErrorCode::NoRecordsUpdated);
 
     Ok(())
@@ -696,18 +668,6 @@ pub fn revoked_investment_record(
 
     let info = &ctx.accounts.investment_info;
     let record = &mut ctx.accounts.investment_record;
-
-
-    // Validate Info PDA with record.investment_id
-    let (expected_info_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            record.investment_id.as_ref(),
-            record.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_info_pda, ErrorCode::InvalidInvestmentInfoPda);
 
 
     // Validate record PDA with info.investment_id
@@ -729,8 +689,6 @@ pub fn revoked_investment_record(
 
     // Validate investment is active and completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
-    require!(info.state != InvestmentState::Completed, ErrorCode::InvestmentInfoHasCompleted);
-
 
     // Reject if this InvestmentRecord account has not been initialized (non-empty data)
     require!(
@@ -764,7 +722,6 @@ pub fn revoked_investment_record(
         investment_id: record.investment_id,
         version: info.version,
         record_id: record.record_id,
-        account_id: record.account_id,
         revoked_by: ctx.accounts.payer.key(),
         revoked_at: now,
         signers: signer_keys,
@@ -899,6 +856,14 @@ where
 
     for (_record_id, record) in record_map.iter() {
         require!(record.account_id.len() == 15, ErrorCode::InvalidAccountIdLength);
+        if record.revoked_at != 0 {
+           msg!(
+                "⚠️ Skipping revoked record_id={} for account_id={}",
+                record.record_id,
+                String::from_utf8_lossy(&record.account_id).trim_end_matches('\0')
+            );
+            continue;
+        }
 
         let wallet = record.wallet;
 
@@ -1103,6 +1068,14 @@ where
     
     for (_record_id, record) in record_map.iter() {
         require!(record.account_id.len() == 15, ErrorCode::InvalidAccountIdLength);
+        if record.revoked_at != 0 {
+            msg!(
+                "⚠️ Skipping revoked record_id={} for account_id={}",
+                record.record_id,
+                String::from_utf8_lossy(&record.account_id).trim_end_matches('\0')
+            );
+            continue;
+        }
 
         let wallet = record.wallet;
 

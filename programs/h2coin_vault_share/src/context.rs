@@ -176,15 +176,7 @@ pub struct AddInvestmentRecords<'info> {
 #[derive(Accounts)]
 #[instruction(account_id: [u8; 15])]
 pub struct UpdateInvestmentRecordWallets<'info> {
-    #[account(
-        mut,
-        seeds = [
-            b"investment",
-            investment_info.investment_id.as_ref(),
-            investment_info.version.as_ref()
-        ],
-        bump
-    )]
+    #[account(mut)]
     pub investment_info: Account<'info, InvestmentInfo>,
 
     /// CHECK: validated manually via 3-of-5 multisig inside instruction
@@ -196,15 +188,7 @@ pub struct UpdateInvestmentRecordWallets<'info> {
 #[derive(Accounts)]
 #[instruction(batch_id:u16, record_id: u64, account_id:[u8; 15])]
 pub struct RevokeInvestmentRecord<'info> {
-    #[account(
-        mut,
-        seeds = [
-            b"investment",
-            investment_info.investment_id.as_ref(),
-            investment_info.version.as_ref()
-        ],
-        bump
-    )]
+    #[account(mut)]
     pub investment_info: Account<'info, InvestmentInfo>,
 
     #[account(

@@ -103,7 +103,6 @@ pub struct InvestmentRecordWalletUpdated {
     pub investment_id: [u8; 15],
     // git commit version
     pub version: [u8; 4],
-    pub record_id: u64,
     pub account_id: [u8; 15],
     pub new_wallet: Pubkey,
     pub updated_by: Pubkey,
@@ -120,7 +119,6 @@ pub struct InvestmentRecordRevoked {
     // git commit version
     pub version: [u8; 4],
     pub record_id: u64,
-    pub account_id: [u8; 15],
     pub revoked_by: Pubkey,
     // UNIX timestamp
     pub revoked_at: i64,
