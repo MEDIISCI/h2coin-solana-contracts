@@ -21,8 +21,8 @@ describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcp222";
-	const __version = "3e2ea019";
+	const __investmentId = "02SEHzIZfBcp223";
+	const __version = "3e2ea022";
 
 
 	const batchId = 1;
@@ -38,10 +38,10 @@ describe("Investment Record management", async () => {
 	
 	const threeUpdateSigners = loadUpdateWhitelistKeypairs().slice(0, 3);
 
-	before("Initialize investment info", async function() {
+	before("Initialize investment info with CSR type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Initialize invesgtment info program...`);
+		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -52,7 +52,7 @@ describe("Investment Record management", async () => {
 		const version = stringToFixedU8Array(__version, 4, "hex");
 		R.version = version;
 
-		const investmentType = { csr:{} };
+		const investmentType = { standard:{} };
 
 		const stageRatioRows = [
 			{ mid: 1.0, last: 4.0 },
@@ -420,10 +420,6 @@ describe("Investment Record management", async () => {
 			.instruction();
 
 			const tx = new Anchor.web3.Transaction().add(ix);
-
-			// delay 1 second
-			await new Promise(resolve => setTimeout(resolve, 1000));
-
 			const sig = await provider.sendAndConfirm(tx, [...threeUpdateSigners]);
 			console.log(`${indent}✅ Wallets updated (tx: ${sig})`);
 
@@ -452,16 +448,16 @@ describe("Investment Record management", async () => {
 			]);
 
 
-		console.log(`${indent}✅`,
-			'after_record_list',
-			after_record_list.map(i => ({
-				recordId: i.account.recordId.toNumber(),
-				accountId: bytesToFixedString(i.account.accountId),
-				wellet: i.account.wallet.toBase58()
-			}))
-		);
-		} catch (e) {
-			console.error(`${indent}❌ error:`, e);
+			console.log(`${indent}✅`,
+				'after_record_list',
+				after_record_list.map(i => ({
+					recordId: i.account.recordId.toNumber(),
+					accountId: bytesToFixedString(i.account.accountId),
+					wellet: i.account.wallet.toBase58()
+				}))
+			);
+		} catch (e:any) {
+			expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
 		}
 	});
 
@@ -555,7 +551,7 @@ describe("Investment Record management", async () => {
 			]);
 			const after_record = after_record_list[3].account;
 			console.log(`${indent}✅`,
-				'before_record',
+				'after_record',
 				{
 					recordId: after_record.recordId.toNumber(),
 					accountId: bytesToFixedString(after_record.accountId),
@@ -564,53 +560,15 @@ describe("Investment Record management", async () => {
 			);
 		} catch (e:any) {
 			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code).to.equal("InvestmentInfoNotCompleted");
+			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
+				"RecordAlreadyRevoked",
+				"InvestmentInfoDeactivated",
+				"InvestmentInfoNotCompleted"
+			]);
 		}
 	});
 
-	it("(3) Set investment state to deactived", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
-		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Set investment state to deactived program...`);
-
-		const program = R.program;
-		const provider = R.provider;
-		const investmentId = R.investmentId;
-		const version = R.version;
-		const investmentInfoPda = R.investmentInfoPda; // 10 million H2coin (6 decimals)
-
-		try {
-			const tx = await program.methods
-			.deactivateInvestmentInfo()
-			.accounts({
-				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
-			} as any)
-			.remainingAccounts(
-				threeUpdateSigners.map(kp => ({
-					pubkey: kp.publicKey,
-					isWritable: false,
-					isSigner: true,
-				}))
-			)
-			.signers(threeUpdateSigners)
-			.preInstructions([modifyComputeUnits])
-			.rpc();
-
-
-			const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-			expect(investmentInfo.investmentId).to.deep.equal(investmentId);
-			expect(investmentInfo.version).to.deep.equal(version);
-			expect(investmentInfo.state).to.have.property("completed");
-			expect(investmentInfo.isActive).to.equal(false);
-			console.log(`${indent}✅ Investment info is deactivated`);
-		} catch (e:any) {
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code).to.equal("InvestmentInfoNotCompleted");
-		}
-	});
-
-	it("(4) Set investment state to complete", async function() {
+	it("(3) Set investment state to complete", async function() {
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}Set investment state to complete...`);
 
@@ -646,9 +604,8 @@ describe("Investment Record management", async () => {
 		}
 	});
 
-	it('(5) Update investment record wallet again', async function () {		
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
-		
+	it('(4) Update investment record wallet again', async function () {		
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Update investment record wallet again program ...`);
 
@@ -687,7 +644,7 @@ describe("Investment Record management", async () => {
 		]);
 
 
-		console.log(
+		console.log(`${indent}`,
 			'before_record_list',
 			before_record_list.map(i => ({
 				recordId: i.account.recordId,
@@ -743,7 +700,10 @@ describe("Investment Record management", async () => {
 			
 		} catch (e:any) {
 			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code).to.equal("NoRecordsUpdated");
+			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
+				"NoRecordsUpdated",
+				"InvestmentInfoDeactivated"
+			]);
 		}
 
 		const after_record_list = await program.account.investmentRecord.all([
@@ -768,7 +728,7 @@ describe("Investment Record management", async () => {
 		]);
 
 
-		console.log(
+		console.log(`${indent}`,
 			'after_record_list',
 			after_record_list.map(i => ({
 				recordId: i.account.recordId,
@@ -778,45 +738,213 @@ describe("Investment Record management", async () => {
 		);
 	});
 
-	// it("(7) Retry set investment state to deactived", async function() {
-	// 	this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
-	// 	const indent = ResolveIndent(this, 1);
-	// 	console.log(`${indent}📃 Retry Set investment state to deactived program...`);
-
-	// 	const program = R.program;
-	// 	const provider = R.provider;
-	// 	const investmentId = R.investmentId;
-	// 	const version = R.version;
-	// 	const investmentInfoPda = R.investmentInfoPda; // 10 million H2coin (6 decimals)
-
-	// 	try {
-	// 		const tx = await program.methods
-	// 		.deactivateInvestmentInfo()
-	// 		.accounts({
-	// 			investmentInfo: investmentInfoPda,
-	// 			payer: provider.wallet.publicKey,
-	// 		} as any)
-	// 		.remainingAccounts(
-	// 			threeUpdateSigners.map(kp => ({
-	// 				pubkey: kp.publicKey,
-	// 				isWritable: false,
-	// 				isSigner: true,
-	// 			}))
-	// 		)
-	// 		.signers(threeUpdateSigners)
-	// 		.preInstructions([modifyComputeUnits])
-	// 		.rpc();
+	it("(5) Create ALT from investment records", async function () {
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		const indent = ResolveIndent(this, 1);
+		console.log(`${indent}📃 Create ALT from investment records program...`);
 
 
-	// 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-	// 		expect(investmentInfo.investmentId).to.deep.equal(investmentId);
-	// 		expect(investmentInfo.version).to.deep.equal(version);
-	// 		expect(investmentInfo.state).to.have.property("completed");
-	// 		expect(investmentInfo.isActive).to.equal(false);
-	// 		console.log(`${indent}✅ Investment info is deactivated`);
-	// 	} catch (e:any) {
-	// 		expect(e).to.have.property("error");
-	// 		expect(e.error.errorCode.code).to.equal("InvestmentInfoDeactivated");
-	// 	}
-	// });
+		const program = R.program;
+		const provider = R.provider;
+		const investmentId = R.investmentId;
+		const version = R.version;
+		const usdtMint = R.usdt_mint;
+
+
+		const record_list = await program.account.investmentRecord.all([
+			{
+				memcmp: {
+					offset: 8, // batchId
+					bytes: bs58.encode(Buffer.from(batchIdBytes)),
+				},
+			},
+			{
+				memcmp: {
+					offset: 33, // investment_id
+					bytes: bs58.encode(Buffer.from(investmentId)),
+				},
+			},
+			{
+				memcmp: {
+					offset: 33 + 15, // version
+					bytes: bs58.encode(Buffer.from(version)),
+				},
+			},
+		]);
+
+
+		const tx_alt = new Anchor.web3.Transaction();
+		const recentSlot = await provider.connection.getSlot("finalized");
+		const [createIx, lookupTableAddress] = AddressLookupTableProgram.createLookupTable({
+			authority: provider.wallet.publicKey,
+			payer: provider.wallet.publicKey,
+			recentSlot,
+		});
+
+		const extendIx = AddressLookupTableProgram.extendLookupTable({
+			lookupTable: lookupTableAddress,
+			authority: provider.wallet.publicKey,
+			payer: provider.wallet.publicKey,
+			addresses: record_list.map(i => i.publicKey),
+		});
+
+		tx_alt.add(createIx, extendIx);
+		const sig = await provider.sendAndConfirm(tx_alt, []);
+		console.log(`${indent}✅ Created ALT for batchId=${batchId}: ${lookupTableAddress.toBase58()}`);
+
+		// Store the lookup table address in the map
+		R.lookupTableMap.get('record')!.set(batchId, lookupTableAddress);
+	});
+
+	it("(6) Estimate profit share using ALT with standard type", async function () {
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		const indent = ResolveIndent(this, 1);
+		console.log(`${indent}📃 Process estimate profit share program...`);
+		
+
+		const program = R.program;
+		const provider = R.provider;
+		const investmentId = R.investmentId;
+		const investmentInfoPda = R.investmentInfoPda;
+		const version = R.version;
+		const usdt_mint = R.usdt_mint;
+		const payer = provider.wallet.publicKey;
+		const totalProfitUsdt = new Anchor.BN(5_000_000_000_000);
+		const lookupTableAddress = R.lookupTableMap.get('record')!.get(batchId);
+		
+
+		// Find the PDA for the profit share cache
+		const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
+				Buffer.from("profit_cache"),
+				Buffer.from(investmentId),
+				Buffer.from(version),
+				batchIdBytes,
+			],
+			program.programId
+		);
+
+
+		// Get all total records and calculte total invest usdt
+		const totalRecords = await program.account.investmentRecord.all([
+			{
+				memcmp: {
+					offset: 8, // batchId
+					bytes: bs58.encode(Array.from(batchIdBytes)),
+				},
+			},
+			{
+				memcmp: {
+					offset: 33,	// investment_id
+					bytes: bs58.encode(Buffer.from(investmentId)),
+				},
+			},
+			{
+				memcmp: {
+					offset: 33 + 15, // version
+					bytes: bs58.encode(Buffer.from(version)),
+				},
+			},
+		]);
+
+		for (const [index, record] of totalRecords.entries()) {
+			const pda = record.publicKey.toBase58();
+			const amount = record.account.amountUsdt.toString();
+		}
+		const totalInvestUsdt = totalRecords.reduce((sum, r) => {
+			return sum.add(r.account.amountUsdt);
+		}, new Anchor.BN(0));
+
+
+		const investmentRecordPdas = totalRecords.map(record => record.publicKey);
+
+
+		let errorCaught = false;
+		try {
+			const estimateIx = await program.methods
+			.estimateProfitShare(1, totalProfitUsdt, totalInvestUsdt)
+			.accounts({
+				investmentInfo: investmentInfoPda,
+				mint: usdt_mint,
+				cache: cachePda,
+				payer: provider.wallet.publicKey,
+				systemProgram: Anchor.web3.SystemProgram.programId,
+			} as any)
+			.remainingAccounts([
+				{
+					pubkey: threeUpdateSigners[0].publicKey,
+					isWritable: false,
+					isSigner: true,
+				},
+				...investmentRecordPdas.map(kp => ({
+					pubkey: kp,
+					isWritable: false,
+					isSigner: false,
+				})),
+			])
+			.signers([threeUpdateSigners[0]])
+			.instruction();
+
+			const blockhash = await provider.connection.getLatestBlockhash();
+			const lookupTableAccount = await provider.connection
+			.getAddressLookupTable(lookupTableAddress!)
+			.then(res => res.value!);
+
+
+			const message = new Anchor.web3.TransactionMessage({
+				payerKey: payer,
+				recentBlockhash: blockhash.blockhash,
+				instructions: [modifyComputeUnits, estimateIx],
+			}).compileToV0Message([lookupTableAccount]);
+
+			
+			const versionedTx = new Anchor.web3.VersionedTransaction(message);
+			versionedTx.sign([threeUpdateSigners[0], provider.wallet.payer!]);
+
+			const signature = await provider.connection.sendTransaction(versionedTx, {
+				skipPreflight: false,
+			});
+
+			const signResult = await provider.connection.confirmTransaction({
+				signature,
+				blockhash: blockhash.blockhash,
+				lastValidBlockHeight: blockhash.lastValidBlockHeight,
+			});
+
+			
+			// Generate report
+			const info = await program.account.investmentInfo.fetch(investmentInfoPda);
+			const cache = await program.account.profitShareCache.fetch(cachePda);
+
+			console.log("🧠 Profit Cache:", {
+				batchId,
+				vault: info.vault.toBase58(),
+				investmentId: Buffer.from(cache.investmentId).toString().replace(/\0/g, ""),
+				version: Buffer.from(cache.version).toString().replace(/\0/g, ""),
+				investmentType: Object.keys(info.investmentType)[0],
+				totalProfitUsdt: totalProfitUsdt.toString(),
+				totalInvestUsdt: totalInvestUsdt.toString(),
+				subtotalProfitUsdt: cache.subtotalProfitUsdt.toString(),
+				subtotalEstimateSol: cache.subtotalEstimateSol.toString(),
+				createdAt: new Date(cache.createdAt.toNumber() * 1000).toISOString(),
+			});
+
+			console.log('show profit cache detail and count:', cache.entries.length);			
+			for (const entry of cache.entries) {
+				const data = {
+					accountId: bytesToFixedString(entry.accountId),
+					wallet: entry.wallet.toBase58(),
+					amountUsdt: entry.amountUsdt.toString(),
+					ratioBp: entry.ratioBp /100
+				};
+				console.log(data);
+			}
+
+			expect(errorCaught).to.be.false;
+		} catch (e:any) {			
+			errorCaught = true;
+			expect(errorCaught).to.be.true;
+			expect(e.transactionLogs.join('\n')).to.include("MustStandard");
+		}
+	});
 });

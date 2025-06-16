@@ -783,6 +783,7 @@ where
     // Validate investment is active and completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
     require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
+    require!(info.investment_type == InvestmentType::Standard, ErrorCode::MustStandard);
     require_keys_eq!(mint.key(), get_usdt_mint(), ErrorCode::InvalidTokenMint);
 
 
@@ -1050,11 +1051,10 @@ where
 
 
     // Calculate refund year index
-    const SECONDS_PER_YEAR: i64 = 365 * 24 * 60 * 60;
+    // const SECONDS_PER_YEAR: i64 = 365 * 24 * 60 * 60;
 
-    let elapsed_secs = now.saturating_sub(info.end_at);
-    let expect_year_index = (elapsed_secs / SECONDS_PER_YEAR) as u8;
-
+    // let elapsed_secs = now.saturating_sub(info.end_at);
+    // let expect_year_index = (elapsed_secs / SECONDS_PER_YEAR) as u8;
     // require!(
     //     year_index == expect_year_index && (START_YEAR_INDEX..=MAX_YEAR_INDEX).contains(&year_index),
     //     ErrorCode::RefundPeriodInvalid
