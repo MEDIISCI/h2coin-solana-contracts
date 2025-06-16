@@ -585,7 +585,6 @@ where
     
     // 1. Validate investment is active and completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
-    require!(info.state != InvestmentState::Completed, ErrorCode::InvestmentInfoHasCompleted);
 
 
     // 3. multisig check
@@ -600,12 +599,15 @@ where
 
     for acc_info in records {
         if acc_info.owner != ctx.program_id {
+            msg!("⚠️ Wrong program_id: {}", acc_info.owner);
             continue;
         }
 
-        let mut record = Account::<InvestmentRecord>::try_from(acc_info)?;
+        // deserialize from account data
+        let mut record_data = acc_info.try_borrow_mut_data()?;
+        let mut record = InvestmentRecord::try_deserialize(&mut &record_data[..])?;
 
-        // Validate Info PDA
+        // Validate investment record PDA
         let (expected_record_pda, _bump) = Pubkey::find_program_address(
             &[
                 b"record",
@@ -619,26 +621,34 @@ where
         );
 
         // skip non-matching records
-        if record.key() != expected_record_pda {
+        if acc_info.key() != expected_record_pda {
+            msg!("⚠️ Record PDA mismatch!: {:?}", acc_info.key());
             continue;
         }
 
         if record.account_id != account_id {
+            msg!("⚠️ account_id mismatch!: {:?}", record.account_id);
             continue;
         }
 
         if record.investment_id != info.investment_id {
+            msg!("⚠️ investment_id mismatch!: {:?}", record.investment_id);
             continue;
         }
 
-        // skip if already same
         if record.wallet == new_wallet {
+            msg!("⚠️ New wallet is the same as old wallet: {}", record.wallet);
             continue;
         }
 
+        // ✅ 修改資料
+        msg!("🟢 Updating record {} wallet from {} to {}", record.record_id, record.wallet, new_wallet);
         record.wallet = new_wallet;
-        updated_count += 1;
 
+        // serialize back to account data
+        record.try_serialize(&mut &mut record_data[..])?;
+        updated_count += 1;
+        msg!("🟢 record update count: {}", updated_count);
 
         emit!(InvestmentRecordWalletUpdated {
             investment_id: info.investment_id,
@@ -649,7 +659,7 @@ where
             updated_by: ctx.accounts.payer.key(),
             updated_at: now,
             signers: signer_keys.clone(),
-        });    
+        });
     }
 
     require!(updated_count > 0, ErrorCode::NoRecordsUpdated);

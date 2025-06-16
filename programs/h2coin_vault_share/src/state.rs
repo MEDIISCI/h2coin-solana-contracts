@@ -25,12 +25,6 @@ pub struct InvestmentInfo {
     pub created_at: i64,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
-pub enum InvestmentType {
-    Standard,
-    Csr,
-}
-
 impl InvestmentInfo {
     /// Total size: 772 bytes
     pub const SIZE: usize =
@@ -129,6 +123,12 @@ impl InvestmentInfo {
     }
 }
 
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Debug)]
+pub enum InvestmentType {
+    Standard,
+    Csr,
+}
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
 #[repr(u16)]

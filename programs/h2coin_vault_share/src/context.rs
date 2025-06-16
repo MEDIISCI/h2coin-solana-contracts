@@ -189,6 +189,8 @@ pub struct UpdateInvestmentRecordWallets<'info> {
 
     /// CHECK: validated manually via 3-of-5 multisig inside instruction
     pub payer: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
