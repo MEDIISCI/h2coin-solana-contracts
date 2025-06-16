@@ -4,7 +4,7 @@ import * as Anchor from "@coral-xyz/anchor";
 import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 
 
-import {stringToFixedU8Array, stage_ratio_map, loadExecuteWhitelistKeypairs, bytesToFixedString} from "./lib/lib";
+import {stringToFixedU8Array, stage_ratio_map, loadExecuteWhitelistKeypairs, loadUpdateWhitelistKeypairs, bytesToFixedString} from "./lib/lib";
 import {Runtime as R} from "./local.runtime";
 
 
@@ -14,9 +14,13 @@ describe("📃h2coin whitelist-check", async () => {
 	const __version = "3e2ea016";
 	
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
-		units: 400_000, // or even 500_000 if needed
+		units: 400_000, // try 400k or 500k if needed
 	});
 
+	const threeExecSigners = loadExecuteWhitelistKeypairs().slice(0, 3);
+	console.log(threeExecSigners.map(kp => kp.publicKey.toBase58()));
+	
+	const threeUpdateSigners = loadUpdateWhitelistKeypairs().slice(0, 3);
 
 	before('Initialize investment info...', async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
@@ -130,9 +134,137 @@ describe("📃h2coin whitelist-check", async () => {
 			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
 			createdAt: new Date(investmentInfo.createdAt.toNumber()*1000),
 		});
+		})
+
+	it("(0) Replace whole with empty", async function() {
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		const indent = ResolveIndent(this, 1);
+		console.log(`${indent}📃 Replace whole with empty program...`);
+
+
+		const program = R.program;
+		const provider = R.provider;
+		const investmentInfoPda = R.investmentInfoPda;
+
+		
+		const withdrawList: PublicKey[] = [];
+				
+
+		let caught = false;
+		try {
+			const tx = await program.methods
+			.patchWithdrawWhitelist()
+			.accounts({
+				investmentInfo: investmentInfoPda,
+				payer: provider.wallet.publicKey,
+			} as any)
+			.remainingAccounts([
+				...threeExecSigners.map(kp => ({
+					pubkey: kp.publicKey,
+					isWritable: false,
+					isSigner: true,
+				})),
+				...withdrawList.map(kp => ({
+					pubkey: kp,
+					isWritable: false,
+					isSigner: false,
+				}))
+			])
+			.signers(threeExecSigners)
+			.preInstructions([modifyComputeUnits])
+			.rpc();
+
+		} catch (e:any) {
+			caught = true;			
+			expect(e).to.have.property("error");
+			expect(e.error.errorCode.code).to.equal("WhitelistLengthInvalid");
+		}
+	
+
+		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
+		const withdrawWhitelist = investmentInfo.withdrawWhitelist;
+		const testList = [
+			new PublicKey("CF5yyzXav4KfxxCAtDwMoptaQXZJeVqMZrFLxePMvZGW")
+		];
+		let all_matched = true;
+		for(let i=0; i<withdrawWhitelist.length; i++) {
+			const index = testList.findIndex((v)=>{
+				return v.equals(withdrawWhitelist[i]);
+			});
+
+			all_matched = all_matched && index >= 0;
+			console.log(`${indent}${withdrawWhitelist[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
+		}
+
+		if ( !all_matched ) {
+			throw new Error("Not matched!");
+		}
 	});
 
-	it("(0) Replace existing key with other existing key", async function() {
+	it("(1) Replace whole with update whitelist signer", async function() {
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		const indent = ResolveIndent(this, 1);
+		console.log(`${indent}📃 Replace whole with update whitelist signer program...`);
+
+		const program = R.program;
+		const investmentInfoPda = R.investmentInfoPda;
+		const provider = R.provider;
+
+
+		const withdrawList: PublicKey[] = [];
+				
+
+		let caught = false;
+		try {
+			const tx = await program.methods
+			.patchWithdrawWhitelist()
+			.accounts({
+				investmentInfo: investmentInfoPda,
+				payer: provider.wallet.publicKey,
+			} as any)
+			.remainingAccounts([
+				...threeUpdateSigners.map(kp => ({
+					pubkey: kp.publicKey,
+					isWritable: false,
+					isSigner: true,
+				})),
+				...withdrawList.map(kp => ({
+					pubkey: kp,
+					isWritable: false,
+					isSigner: false,
+				}))
+			])
+			.signers(threeUpdateSigners)
+			.preInstructions([modifyComputeUnits])
+			.rpc();		
+		} catch (e:any) {			
+			caught = true;
+			expect(e).to.have.property("error");
+			expect(e.error.errorCode.code).to.equal("UnauthorizedSigner");
+		}
+	
+
+		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
+		const withdrawWhitelist = investmentInfo.withdrawWhitelist;
+		const testList = [
+			new PublicKey("CF5yyzXav4KfxxCAtDwMoptaQXZJeVqMZrFLxePMvZGW")
+		];
+		let all_matched = true;
+		for(let i=0; i<withdrawWhitelist.length; i++) {
+			const index = testList.findIndex((v)=>{
+				return v.equals(withdrawWhitelist[i]);
+			});
+
+			all_matched = all_matched && index >= 0;
+			console.log(`${indent}${withdrawWhitelist[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
+		}
+
+		if ( !all_matched ) {
+			throw new Error("Not matched!");
+		}
+	});
+
+	it("(2) Replace whole", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Replace existing key with other existing key program...`);
@@ -142,267 +274,52 @@ describe("📃h2coin whitelist-check", async () => {
 		const provider = R.provider;
 		const investmentInfoPda = R.investmentInfoPda;
 
-		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(0, 3);
-		
 
-		const from = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
-		const to = new PublicKey("9VzY3YbTyVjmE2BDBjgNr32Sfv2xpsx1CMNiCS9Kc8eT");
-		
-		
-		let caught = false;
-		try {
-			await program.methods
-				.patchExecuteWhitelist()
-				.accounts({
-					investmentInfo: investmentInfoPda,
-					payer: provider.wallet.publicKey,
-				} as any)
-				.remainingAccounts([
-					...threeSigners.map(kp => ({
-						pubkey: kp.publicKey,
-						isWritable: false,
-						isSigner: true,
-					})),
-					{ pubkey: from, isWritable: false, isSigner: false },
-					{ pubkey: to, isWritable: false, isSigner: false },
-				])
-				.signers(threeSigners)
-				.preInstructions([modifyComputeUnits])
-				.rpc();
-		} catch (e: any) {
-			caught = true;
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
-				"WhitelistAddressExists",
-				"WhitelistAddressNotFound"
-			]);
-		}
-
-
-		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
-		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const index = executeWhiteLists.findIndex((v)=>{
-				return v.publicKey.equals(execWhiteLists[i]);
-			});
-
-			all_matched = all_matched && index >= 0;
-			console.log(`${indent}${execWhiteLists[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
-		}
-
-		if ( !all_matched ) {
-			throw new Error("Not matched!");
-		}
-	});
-
-	it("(1) Replace existing key with self", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
-		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Replace existing key with self program...`);
-
-
-		const program = R.program;
-		const provider = R.provider;
-		const investmentInfoPda = R.investmentInfoPda;
-
-		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(0, 3);
-
-		const from = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
-		const to = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
+		const withdrawList:PublicKey[] = [
+			new PublicKey("78cKKSS3V2hortcDFKbUaPunYE1PWW11oEomYCPNMo8k"),
+			new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB"),
+		];
 				
 		let caught = false;
-		try {
-			await program.methods
-				.patchExecuteWhitelist()
-				.accounts({
-					investmentInfo: investmentInfoPda,
-					payer: provider.wallet.publicKey,
-				} as any)
-				.remainingAccounts([
-					...threeSigners.map(kp => ({
-						pubkey: kp.publicKey,
-						isWritable: false,
-						isSigner: true,
-					})),
-					{ pubkey: from, isWritable: false, isSigner: false },
-					{ pubkey: to, isWritable: false, isSigner: false },
-				])
-				.signers(threeSigners)
-				.preInstructions([modifyComputeUnits])
-				.rpc();
-		} catch (e: any) {
-			caught = true;
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
-				"WhitelistAddressExists",
-				"WhitelistAddressNotFound"
-			]);
-		}
-
-
-		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
-		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const index = executeWhiteLists.findIndex((v)=>{
-				return v.publicKey.equals(execWhiteLists[i]);
-			});
-
-			all_matched = all_matched && index >= 0;
-			console.log(`${indent}${execWhiteLists[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
-		}
-
-		if ( !all_matched ) {
-			throw new Error("Not matched!");
-		}
-	});
-
-	it("(2) Replace existing key with new key", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
-		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Replace existing key with new key...`);
-
-
-		const program = R.program;
-		const investmentInfoPda = R.investmentInfoPda;
-		const provider = R.provider;
-		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(0, 3);
-
-		const from = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
-		const to  = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
-				
 		try {
 			const tx = await program.methods
-			.patchExecuteWhitelist()
+			.patchWithdrawWhitelist()
 			.accounts({
 				investmentInfo: investmentInfoPda,
 				payer: provider.wallet.publicKey,
 			} as any)
 			.remainingAccounts([
-				...threeSigners.map(kp => ({
+				...threeExecSigners.map(kp => ({
 					pubkey: kp.publicKey,
 					isWritable: false,
 					isSigner: true,
 				})),
-				{ pubkey: from, isWritable: false, isSigner: false },
-				{ pubkey: to, isWritable: false, isSigner: false },
-			])
-			.signers(threeSigners)
-			.preInstructions([modifyComputeUnits])
-			.rpc();
-		} catch (e:any) {			
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
-				"WhitelistAddressExists",
-				"WhitelistAddressNotFound"
-			]);
-		}
-		
-
-
-		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
-		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const target = execWhiteLists[i];
-			const index = executeWhiteLists.findIndex((v)=>{
-				return v.publicKey.equals(target);
-			});
-
-			let pass:boolean;
-			if ( target.equals(from) ) {
-				pass = false;
-			}
-			else if ( target.equals(to) ) {
-				pass = index < 0;
-			}
-			else {
-				pass = index >= 0;
-			}
-
-			all_matched = all_matched && pass;
-			console.log(`${indent}${target.toBase58()} ${pass ? '✅' : '❌'}`);
-		}
-
-		if ( !all_matched ) {
-			throw new Error("Not matched!");
-		}
-	});
-
-	it("(3) Reset to original whitelist", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
-		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Reset to original whitelist progress...`);
-
-
-		const program = R.program;
-		const investmentInfoPda = R.investmentInfoPda;
-		const provider = R.provider;
-		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(1, 4);
-
-		const from  = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
-		const to 	= new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
-				
-		try {
-			const tx = await program.methods
-			.patchExecuteWhitelist()
-			.accounts({
-				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
-			} as any)
-			.remainingAccounts([
-				...threeSigners.map(kp => ({
-					pubkey: kp.publicKey,
+				...withdrawList.map(kp => ({
+					pubkey: kp,
 					isWritable: false,
-					isSigner: true,
-				})),
-				{ pubkey: from, isWritable: false, isSigner: false },
-				{ pubkey: to, isWritable: false, isSigner: false },
+					isSigner: false,
+				}))
 			])
-			.signers(threeSigners)
+			.signers(threeExecSigners)
 			.preInstructions([modifyComputeUnits])
-			.rpc();
-		} catch (e:any) {			
+			.rpc();		
+		} catch (e:any) {
+			caught = true;
 			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
-				"WhitelistAddressExists",
-				"WhitelistAddressNotFound"
-			]);
+			expect(e.error.errorCode.code).to.equal("WhitelistAddressExists");
 		}
-		
 
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
-		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const target = execWhiteLists[i];
-			const index = executeWhiteLists.findIndex((v)=>{
-				return v.publicKey.equals(target);
+		const withdrawWhitelist = investmentInfo.withdrawWhitelist;
+		let all_matched = withdrawWhitelist.length === withdrawList.length;
+		for(let i=0; i<withdrawWhitelist.length; i++) {
+			const index = withdrawList.findIndex((v)=>{
+				return v.equals(withdrawWhitelist[i]);
 			});
 
-			let pass:boolean;
-			if ( target.equals(from) ) {
-				pass = false;
-			}
-			else if ( target.equals(to) ) {
-				pass = index >= 0;
-			}
-			else {
-				pass = index < 0;
-			}
-
-			all_matched = all_matched && pass;
-			console.log(`${indent}${target.toBase58()} ${pass ? '✅' : '❌'}`);
+			all_matched = all_matched && index >= 0;
+			console.log(`${indent}${withdrawWhitelist[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
 		}
 
 		if ( !all_matched ) {

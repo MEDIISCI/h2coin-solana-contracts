@@ -303,8 +303,11 @@ pub fn patch_execute_whitelist(ctx: Context<UpdateExecuteWallet>) -> Result<()> 
     require_keys_eq!(info.key(), expected_pda, ErrorCode::InvalidInvestmentInfoPda);
 
 
+    // Reject if no signers provided
     let signer_infos = &ctx.remaining_accounts[..3];
+    msg!("🟢 execute signer count: {}", signer_infos.len());
     let signer_keys = extract_signer_keys(signer_infos);
+    msg!("🟢 Signers: {:?}", signer_keys);
     info.enforce_3_of_5_signers(signer_infos, false)?;
     
     
@@ -363,8 +366,12 @@ pub fn patch_update_whitelist(ctx: Context<UpdateUpdateWallet>) -> Result<()> {
         ErrorCode::InvestmentInfoDeactivated
     );
 
+
+    // Reject if no signers provided
     let signer_infos = &ctx.remaining_accounts[..3];
+    msg!("🟢 execute signer count: {}", signer_infos.len());
     let signer_keys = extract_signer_keys(signer_infos);
+    msg!("🟢 Signers: {:?}", signer_keys);
     info.enforce_3_of_5_signers(signer_infos, true)?;
     
     
@@ -416,8 +423,12 @@ pub fn patch_withdraw_whitelist(ctx: Context<UpdateWithdrawWallet>) -> Result<()
     let now = Clock::get()?.unix_timestamp;
     let info = &mut ctx.accounts.investment_info;
 
-    // Validate state
-    require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
+
+    // Reject if investment has been deactivated
+    require!(
+        info.is_active, 
+        ErrorCode::InvestmentInfoDeactivated
+    );
 
 
     let (expected_pda, _bump) = Pubkey::find_program_address(
@@ -431,14 +442,20 @@ pub fn patch_withdraw_whitelist(ctx: Context<UpdateWithdrawWallet>) -> Result<()
     require_keys_eq!(info.key(), expected_pda, ErrorCode::InvalidInvestmentInfoPda);
 
 
-    // Parse remaining_accounts
+    // Reject if no signers provided
     let signer_infos = &ctx.remaining_accounts[..3];
-    // Signer validation
+    msg!("🟢 execute signer count: {}", signer_infos.len());
     let signer_keys = extract_signer_keys(signer_infos);
+    msg!("🟢 Signers: {:?}", signer_keys);
     info.enforce_3_of_5_signers(signer_infos, false)?;
 
 
-    let wallet_infos = &ctx.remaining_accounts[3..];
+    let wallet_infos = &ctx.remaining_accounts[signer_infos.len()..];
+    require!(
+        !wallet_infos.is_empty() && wallet_infos.len() <= MAX_WHITELIST_LEN,
+        ErrorCode::WhitelistLengthInvalid
+    );
+
     // Extract and validate new wallet list
     let new_wallets: Vec<Pubkey> = wallet_infos.iter().map(|a| a.key()).collect();
 
@@ -462,7 +479,7 @@ pub fn patch_withdraw_whitelist(ctx: Context<UpdateWithdrawWallet>) -> Result<()
     });
     
 
-    msg!("🟢 🔁 Withdraw whitelist replaced");
+    msg!("🟢 Withdraw whitelist replaced");
     Ok(())
 }
 

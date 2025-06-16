@@ -1,22 +1,21 @@
-import { expect } from "chai";
+import { expect } from "chai"
 import {describe, it} from "mocha";
 import * as Anchor from "@coral-xyz/anchor";
 import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 
 
-import {stringToFixedU8Array, stage_ratio_map, loadExecuteWhitelistKeypairs, bytesToFixedString} from "./lib/lib";
+import {stringToFixedU8Array, stage_ratio_map, loadUpdateWhitelistKeypairs, bytesToFixedString} from "./lib/lib";
 import {Runtime as R} from "./local.runtime";
 
 
 
 describe("📃h2coin whitelist-check", async () => {
 	const __investmentId = "02SEHzIZfBcp222";
-	const __version = "3e2ea016";
-	
+	const __version = "3e2ea017";
+
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
 		units: 400_000, // or even 500_000 if needed
 	});
-
 
 	before('Initialize investment info...', async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
@@ -31,10 +30,10 @@ describe("📃h2coin whitelist-check", async () => {
 		const investmentId = stringToFixedU8Array(__investmentId, 15);
 		R.investmentId = investmentId;
 
-		const version = stringToFixedU8Array(__version, 4, 'hex');
+		const version = stringToFixedU8Array(__version, 4, "hex");
 		R.version = version;
-
-		const investmentType = { csr: {} };
+		
+		const investmentType = { standard: {} };
 
 		const stageRatioRows = [
 			{ mid: 6.0, last: 4.0 },
@@ -46,6 +45,7 @@ describe("📃h2coin whitelist-check", async () => {
 		const start_at = new Anchor.BN(1747699200);
 		const end_at = new Anchor.BN(1779235200);
 		const upperLimit = new Anchor.BN(5_000_000_000_000);
+
 
 		const executeWhitelist = [
 			new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW"),
@@ -67,7 +67,6 @@ describe("📃h2coin whitelist-check", async () => {
 			new PublicKey("CF5yyzXav4KfxxCAtDwMoptaQXZJeVqMZrFLxePMvZGW"),
 		]
 
-
 		const [investmentInfoPda] = Anchor.web3.PublicKey.findProgramAddressSync(
 				[
 					Buffer.from("investment"), 
@@ -77,6 +76,13 @@ describe("📃h2coin whitelist-check", async () => {
 				program.programId
 			);
 		R.investmentInfoPda = investmentInfoPda;
+		try {
+			const info_data = await program.account.investmentInfo.fetch(investmentInfoPda);
+			console.log('info_data exits');
+			return;
+		} catch (e:any) {
+			console.log('info_data not exits');
+		}
 		
 		
 		try {
@@ -100,7 +106,6 @@ describe("📃h2coin whitelist-check", async () => {
 			} as any)
 			.preInstructions([modifyComputeUnits])
 			.rpc();
-			
 
 			// assertion
 			const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
@@ -108,8 +113,8 @@ describe("📃h2coin whitelist-check", async () => {
 			expect(investmentInfo.version).to.deep.equal(version);
 			expect(investmentInfo.state).to.have.property("pending");
 			expect(investmentInfo.isActive).to.equal(true);
-
-		} catch (e:any) {			
+			
+		} catch (e:any) {
 			const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
 			expect(logs).to.include("already in use");
 		}
@@ -143,34 +148,34 @@ describe("📃h2coin whitelist-check", async () => {
 		const investmentInfoPda = R.investmentInfoPda;
 
 		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(0, 3);
-		
+		const updateWhistLists = loadUpdateWhitelistKeypairs();
+		const threeSigners = updateWhistLists.slice(0, 3);
 
-		const from = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
-		const to = new PublicKey("9VzY3YbTyVjmE2BDBjgNr32Sfv2xpsx1CMNiCS9Kc8eT");
-		
-		
+
+		const from = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
+		const to = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
+
+
 		let caught = false;
 		try {
 			await program.methods
-				.patchExecuteWhitelist()
-				.accounts({
-					investmentInfo: investmentInfoPda,
-					payer: provider.wallet.publicKey,
-				} as any)
-				.remainingAccounts([
-					...threeSigners.map(kp => ({
-						pubkey: kp.publicKey,
-						isWritable: false,
-						isSigner: true,
-					})),
-					{ pubkey: from, isWritable: false, isSigner: false },
-					{ pubkey: to, isWritable: false, isSigner: false },
-				])
-				.signers(threeSigners)
-				.preInstructions([modifyComputeUnits])
-				.rpc();
+			.patchUpdateWhitelist()
+			.accounts({
+				investmentInfo: investmentInfoPda,
+				payer: provider.wallet.publicKey,
+			} as any)
+			.remainingAccounts([
+				...threeSigners.map(kp => ({
+					pubkey: kp.publicKey,
+					isWritable: false,
+					isSigner: true,
+				})),
+				{ pubkey: from, isWritable: false, isSigner: false },
+				{ pubkey: to, isWritable: false, isSigner: false },
+			])
+			.signers(threeSigners)
+			.preInstructions([modifyComputeUnits])
+			.rpc();
 		} catch (e: any) {
 			caught = true;
 			expect(e).to.have.property("error");
@@ -181,16 +186,17 @@ describe("📃h2coin whitelist-check", async () => {
 		}
 
 
+
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
+		const updateWhiteLists = investmentInfo.updateWhitelist;
 		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const index = executeWhiteLists.findIndex((v)=>{
-				return v.publicKey.equals(execWhiteLists[i]);
+		for(let i=0; i<updateWhiteLists.length; i++) {
+			const index = updateWhistLists.findIndex((v)=>{
+				return v.publicKey.equals(updateWhiteLists[i]);
 			});
 
 			all_matched = all_matched && index >= 0;
-			console.log(`${indent}${execWhiteLists[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
+			console.log(`${indent}${updateWhiteLists[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
 		}
 
 		if ( !all_matched ) {
@@ -209,78 +215,16 @@ describe("📃h2coin whitelist-check", async () => {
 		const investmentInfoPda = R.investmentInfoPda;
 
 		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(0, 3);
+		const updateWhistLists = loadUpdateWhitelistKeypairs();
+		const threeSigners = updateWhistLists.slice(0, 3);
 
-		const from = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
-		const to = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
+		const from = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
+		const to = new PublicKey("CtwJnkTrVCdye3MF2VSRtyoLtGLdCBAkfs1idn3FeHRp");
 				
 		let caught = false;
 		try {
 			await program.methods
-				.patchExecuteWhitelist()
-				.accounts({
-					investmentInfo: investmentInfoPda,
-					payer: provider.wallet.publicKey,
-				} as any)
-				.remainingAccounts([
-					...threeSigners.map(kp => ({
-						pubkey: kp.publicKey,
-						isWritable: false,
-						isSigner: true,
-					})),
-					{ pubkey: from, isWritable: false, isSigner: false },
-					{ pubkey: to, isWritable: false, isSigner: false },
-				])
-				.signers(threeSigners)
-				.preInstructions([modifyComputeUnits])
-				.rpc();
-		} catch (e: any) {
-			caught = true;
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
-				"WhitelistAddressExists",
-				"WhitelistAddressNotFound"
-			]);
-		}
-
-
-		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
-		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const index = executeWhiteLists.findIndex((v)=>{
-				return v.publicKey.equals(execWhiteLists[i]);
-			});
-
-			all_matched = all_matched && index >= 0;
-			console.log(`${indent}${execWhiteLists[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
-		}
-
-		if ( !all_matched ) {
-			throw new Error("Not matched!");
-		}
-	});
-
-	it("(2) Replace existing key with new key", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
-		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Replace existing key with new key...`);
-
-
-		const program = R.program;
-		const investmentInfoPda = R.investmentInfoPda;
-		const provider = R.provider;
-		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(0, 3);
-
-		const from = new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
-		const to  = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
-				
-		try {
-			const tx = await program.methods
-			.patchExecuteWhitelist()
+			.patchUpdateWhitelist()
 			.accounts({
 				investmentInfo: investmentInfoPda,
 				payer: provider.wallet.publicKey,
@@ -297,22 +241,86 @@ describe("📃h2coin whitelist-check", async () => {
 			.signers(threeSigners)
 			.preInstructions([modifyComputeUnits])
 			.rpc();
-		} catch (e:any) {			
+		} catch (e: any) {
+			caught = true;
 			expect(e).to.have.property("error");
 			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
 				"WhitelistAddressExists",
 				"WhitelistAddressNotFound"
 			]);
 		}
-		
 
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
+		const updateWhiteLists = investmentInfo.updateWhitelist;
 		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const target = execWhiteLists[i];
-			const index = executeWhiteLists.findIndex((v)=>{
+		for(let i=0; i<updateWhiteLists.length; i++) {
+			const index = updateWhistLists.findIndex((v)=>{
+				return v.publicKey.equals(updateWhiteLists[i]);
+			});
+
+			all_matched = all_matched && index >= 0;
+			console.log(`${indent}${updateWhiteLists[i].toBase58()} ${index >= 0 ? '✅' : '❌'}`);
+		}
+
+		if ( !all_matched ) {
+			throw new Error("Not matched!");
+		}
+	});
+
+	it("(2) Replace existing key with new key", async function() {
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		const indent = ResolveIndent(this, 1);
+		console.log(`${indent}📃 Replace existing key with new key...`);
+
+		const program = R.program;
+		const investmentInfoPda = R.investmentInfoPda;
+		const provider = R.provider;
+
+		
+		const updateWhistLists = loadUpdateWhitelistKeypairs();
+		const threeSigners = updateWhistLists.slice(0, 3);
+
+
+		const from = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
+		const to  = new PublicKey("CR7HxrTiCiCvWxgJF2gGV3XjQnm1pveBp5XCrXqwJnLy");
+				
+		let caught = false;
+		try {
+			await program.methods
+			.patchUpdateWhitelist()
+			.accounts({
+				investmentInfo: investmentInfoPda,
+				payer: provider.wallet.publicKey,
+			} as any)
+			.remainingAccounts([
+				...threeSigners.map(kp => ({
+					pubkey: kp.publicKey,
+					isWritable: false,
+					isSigner: true,
+				})),
+				{ pubkey: from, isWritable: false, isSigner: false },
+				{ pubkey: to, isWritable: false, isSigner: false },
+			])
+			.signers(threeSigners)
+			.preInstructions([modifyComputeUnits])
+			.rpc();
+		} catch (e: any) {
+			caught = true;
+			expect(e).to.have.property("error");
+			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
+				"WhitelistAddressExists",
+				"WhitelistAddressNotFound"
+			]);
+		}
+
+
+		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
+		const updateWhiteLists = investmentInfo.updateWhitelist;
+		let all_matched = true;
+		for(let i=0; i<updateWhiteLists.length; i++) {
+			const target = updateWhiteLists[i];
+			const index = updateWhistLists.findIndex((v)=>{
 				return v.publicKey.equals(target);
 			});
 
@@ -339,22 +347,24 @@ describe("📃h2coin whitelist-check", async () => {
 	it("(3) Reset to original whitelist", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Reset to original whitelist progress...`);
-
+		console.log(`${indent}📃 Reset to original whitelist...`);
 
 		const program = R.program;
 		const investmentInfoPda = R.investmentInfoPda;
 		const provider = R.provider;
-		
-		const executeWhiteLists = loadExecuteWhitelistKeypairs();
-		const threeSigners = executeWhiteLists.slice(1, 4);
 
-		const from  = new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
-		const to 	= new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW");
+		
+		const updateWhistLists = loadUpdateWhitelistKeypairs();
+		const threeSigners = updateWhistLists.slice(0, 3);
+
+
+		const from  = new PublicKey("CR7HxrTiCiCvWxgJF2gGV3XjQnm1pveBp5XCrXqwJnLy");
+		const to	= new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB");
 				
+		let caught = false;
 		try {
-			const tx = await program.methods
-			.patchExecuteWhitelist()
+			await program.methods
+			.patchUpdateWhitelist()
 			.accounts({
 				investmentInfo: investmentInfoPda,
 				payer: provider.wallet.publicKey,
@@ -371,22 +381,24 @@ describe("📃h2coin whitelist-check", async () => {
 			.signers(threeSigners)
 			.preInstructions([modifyComputeUnits])
 			.rpc();
-		} catch (e:any) {			
+		} catch (e: any) {
+			caught = true;
+			console.log(e);
+			
 			expect(e).to.have.property("error");
 			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
 				"WhitelistAddressExists",
 				"WhitelistAddressNotFound"
 			]);
 		}
-		
 
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		const execWhiteLists = investmentInfo.executeWhitelist;
+		const updateWhiteLists = investmentInfo.updateWhitelist;
 		let all_matched = true;
-		for(let i=0; i<execWhiteLists.length; i++) {
-			const target = execWhiteLists[i];
-			const index = executeWhiteLists.findIndex((v)=>{
+		for(let i=0; i<updateWhiteLists.length; i++) {
+			const target = updateWhiteLists[i];
+			const index = updateWhistLists.findIndex((v)=>{
 				return v.publicKey.equals(target);
 			});
 
