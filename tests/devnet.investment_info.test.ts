@@ -7,7 +7,7 @@ import { stringToFixedU8Array, stage_ratio_map,
 	loadExecuteWhitelistKeypairs, loadUpdateWhitelistKeypairs, 
 	loadWithdrawWhitelistKeypairs, 
 	bytesToFixedString} from "./lib/lib";
-import {Runtime as R} from "./local.runtime";
+import {Runtime as R} from "./devnet.runtime";
 import { create } from "domain";
 
 

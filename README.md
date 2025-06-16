@@ -40,9 +40,11 @@ The protocol emphasizes asset security through 3-of-5 multi-signature authorizat
 > 🔐 All critical instructions require 3-of-5 whitelist signer validation.
 
 ## 🚀 Deployment & Testing
+
 This section outlines the steps to configure your environment, build, deploy, and test the H2Coin Vault Share Protocol on Solana Devnet.
 
 ### 1\. **Install project dependencies**
+
 ```
 yarn install
 ```
@@ -68,6 +70,7 @@ ALjifiKwvSzKLfpebFZ185b3mLAxroEvxYXCcy9Lzw2B
 ```
 
 ### 4\. **Set Up Devent Environment**
+
 Configure Solana CLI to use Devnet and your deploy authority:
 
 ```
@@ -92,7 +95,9 @@ Commitment: confirmed
 ```
 
 ### 5\. **Fund Your Wallet with Test SOL**
+
 Use this to receive 5 test SOL from the Devnet faucet.
+
 ```
 solana airdrop 5
 ```
@@ -146,9 +151,14 @@ The tests cover:
 
 To execute all tests:
 
-```
-npx mocha 
-```
+| command | Description |
+| --- | --- |
+| npx mocha [`tests/devnet.investment_info.test.ts`](./tests/devnet.investment_info.test.ts) | Initialize investment info and update/complete/deactivated investment info |
+| npm mocha [`tests/devnet.execute_whitelist.test.ts`](./tests/devnet.execute_whitelist.test.ts) | Update execute whitelist |
+| npm mocha [`tests/devnet.update_whitelist.test.ts`](./tests/devnet.update_whitelist.test.ts) | Update Update whitelist |
+| npm mocha [`tests/devnet.withdraw_whitelist.test.ts`](./tests/devnet.withdraw_whitelist.test.ts) | Update withdraw whitelist |
+| npm mocha [`tests/devnet.investment_record.test1.ts`](./tests/devnet.investment_record.test1.ts) | Add invesment records with type `csr` |
+| npm mocha [`tests/devnet.investment_record.test2.ts`](./tests/devnet.investment_record.test2.ts) | Add invesment records with type `standard` |
 
 ### 9\. **Upgrade the Program (if needed)**
 

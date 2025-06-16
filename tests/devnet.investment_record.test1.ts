@@ -12,7 +12,7 @@ import { stringToFixedU8Array, stage_ratio_map,
 	loadWithdrawWhitelistKeypairs, 
 	bytesToFixedString,	u16ToLEBytes
 } from "./lib/lib";
-import {Runtime as R} from "./local.runtime";
+import {Runtime as R} from "./devnet.runtime";
 
 
 

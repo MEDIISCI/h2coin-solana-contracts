@@ -16,7 +16,7 @@ import {
 	loadUpdateWhitelistKeypairs, loadExecuteWhitelistKeypairs,
 	loadWithdrawWhitelistKeypairs
 } from "./lib/lib";
-import {Runtime as R} from "./local.runtime";
+import {Runtime as R} from "./devnet.runtime";
 
 
 

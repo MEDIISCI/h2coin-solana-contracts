@@ -5,7 +5,7 @@ import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 
 
 import {stringToFixedU8Array, stage_ratio_map, loadUpdateWhitelistKeypairs, bytesToFixedString} from "./lib/lib";
-import {Runtime as R} from "./local.runtime";
+import {Runtime as R} from "./devnet.runtime";
 
 
 
