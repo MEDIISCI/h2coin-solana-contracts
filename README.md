@@ -26,7 +26,7 @@ The protocol emphasizes asset security through 3-of-5 multi-signature authorizat
     *   Cache-based distribution estimation
     *   3-of-5 multisig authorization for security
 *   **Refund Distribution System**
-    *   10-year refund period (starting from year 4)
+    *   10-year refund period (starting from year 4 or year-inex 3)
     *   Stage-based refund ratio calculations
     *   H2COIN token distribution
     *   Automated refund tracking

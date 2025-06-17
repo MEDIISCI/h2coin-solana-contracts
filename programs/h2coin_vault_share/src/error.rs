@@ -115,11 +115,14 @@ pub enum ErrorCode {
     // 📈 Profit Share Cache
     // ────────────────────────────────
     #[msg("🔴 Investment type must be `Standard`.")]
-    MustStandard,
+    StandardOnly,
 
     #[msg("🔴 Total share does not match.")]
     TotalShareMismatch,
 
+    #[msg("🔴 Profit share cache not found.")]
+    ProfitCacheNotFound,
+    
     #[msg("🔴 Profit share cache has expired (older than 25 days)")]
     ProfitCacheExpired,
 
@@ -159,6 +162,9 @@ pub enum ErrorCode {
     // ────────────────────────────────
     #[msg("🔴 Refund share cache has expired (older than 25 days)")]
     RefundCacheExpired,
+
+    #[msg("🔴 Refund share cache not found.")]
+    RefundCacheNotFound,
 
     #[msg("🔴 Refund period is invalid")]
     RefundPeriodInvalid,

@@ -783,7 +783,7 @@ where
     // Validate investment is active and completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
     require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
-    require!(info.investment_type == InvestmentType::Standard, ErrorCode::MustStandard);
+    require!(info.investment_type == InvestmentType::Standard, ErrorCode::StandardOnly);
     require_keys_eq!(mint.key(), get_usdt_mint(), ErrorCode::InvalidTokenMint);
 
 
@@ -1051,14 +1051,14 @@ where
 
 
     // Calculate refund year index
-    // const SECONDS_PER_YEAR: i64 = 365 * 24 * 60 * 60;
+    const SECONDS_PER_YEAR: i64 = 365 * 24 * 60 * 60;
 
-    // let elapsed_secs = now.saturating_sub(info.end_at);
-    // let expect_year_index = (elapsed_secs / SECONDS_PER_YEAR) as u8;
-    // require!(
-    //     year_index == expect_year_index && (START_YEAR_INDEX..=MAX_YEAR_INDEX).contains(&year_index),
-    //     ErrorCode::RefundPeriodInvalid
-    // );
+    let elapsed_secs = now.saturating_sub(info.end_at);
+    let expect_year_index = (elapsed_secs / SECONDS_PER_YEAR) as u8;
+    require!(
+        year_index <= expect_year_index && (START_YEAR_INDEX..=MAX_YEAR_INDEX).contains(&year_index),
+        ErrorCode::RefundPeriodInvalid
+    );
     
 
     // Compute refund entries
@@ -1225,13 +1225,17 @@ where
     // reject if investment info has been deactived or has not been completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
     require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
-    require!(info.investment_type == InvestmentType::Standard, ErrorCode::MustStandard);
+    require!(info.investment_type == InvestmentType::Standard, ErrorCode::StandardOnly);
 
-    // Validate the timestamp
+    // reject if cache is not initialized or batch_id mismatch
+    require!(!cache.to_account_info().data_is_empty(), ErrorCode::ProfitCacheNotFound);
+    require!(cache.batch_id == batch_id, ErrorCode::BatchIdMismatch);
+
+
+    // reject if execuated_at is not 0 or cache has been executed
     require!(cache.executed_at == 0, ErrorCode::ProfitAlreadyExecuted);
+    // reject if cache created_at execceds 25 days
     require!(now - cache.created_at <= SHARE_CACHE_EXPIRE_SECS, ErrorCode::ProfitCacheExpired);
-
-
     // reject if subtotal_profit_usdt is 0
     require!(cache.subtotal_profit_usdt > 0, ErrorCode::InvalidTotalUsdt);
 
@@ -1407,13 +1411,21 @@ where
     require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
     
 
-    // Validate the timestamp
-    require!(cache.executed_at == 0, ErrorCode::RefundAlreadyExecuted);
-    require!(now - cache.created_at <= SHARE_CACHE_EXPIRE_SECS, ErrorCode::RefundCacheExpired);
+    // reject if investment info has been deactived or has not been completed
+    require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
+    require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
+
+    // reject if cache is not initialized or batch_id mismatch
+    require!(!cache.to_account_info().data_is_empty(), ErrorCode::ProfitCacheNotFound);
+    require!(cache.batch_id == batch_id, ErrorCode::BatchIdMismatch);
 
 
+    // reject if execuated_at is not 0 or cache has been executed
+    require!(cache.executed_at == 0, ErrorCode::ProfitAlreadyExecuted);
+    // reject if cache created_at execceds 25 days
+    require!(now - cache.created_at <= SHARE_CACHE_EXPIRE_SECS, ErrorCode::ProfitCacheExpired);
     // reject if subtotal_refund_hcoin is 0
-    require!(cache.subtotal_refund_hcoin > 0, ErrorCode::InvalidTotalH2coin);
+    require!(cache.subtotal_refund_hcoin > 0, ErrorCode::InvalidTotalUsdt);
 
 
     // Ensure signer is part of 3-of-5 execute whitelist
