@@ -1137,13 +1137,13 @@ describe("Investment Record management", async () => {
 
 			for (const entry of cache.entries) {
 				const recipient = new PublicKey(entry.wallet);
-				const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient, false);
+				const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient);
 
 				// const recipientAta = await getAssociatedTokenAddress(
 				// 	usdtMint,
 				// 	recipient,
 				// 	false,
-				// 	TOKEN_2022_PROGRAM_ID,
+				// 	TOKEN_PROGRAM_ID,
 				// 	ASSOCIATED_TOKEN_PROGRAM_ID
 				// );
 
@@ -1156,8 +1156,10 @@ describe("Investment Record management", async () => {
 						usdtMint,
 						TOKEN_PROGRAM_ID,
 						ASSOCIATED_TOKEN_PROGRAM_ID
-					);					
+					);
 					instructions.push(ix);
+
+					console.log(`${indent}✅ Created ATA for recipient: ${recipient.toBase58()} (${recipientAta.toBase58()}) `);
 				}
 			}
 		}
