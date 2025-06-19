@@ -193,5 +193,13 @@ pub enum ErrorCode {
 
     #[msg("🔴 Recipient wallet is not in the withdraw whitelist.")]
     UnauthorizedRecipient,
-}
 
+    #[msg("🔴 Invalid associated token account.")]
+    InvalidAssociatedTokenAccount,
+
+    #[msg("🔴 Invalid token program ID. Must be Token 2020(Legacy).")]
+    InvalidTokenProgramID,
+
+    #[msg("🔴 Invalid associated token program ID.")]
+    InvalidAssociatedTokenProgramID,
+}

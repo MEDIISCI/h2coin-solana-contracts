@@ -7,12 +7,16 @@ use anchor_lang::solana_program::{
     program::{invoke, invoke_signed},
     system_instruction,
     account_info::AccountInfo,
+    system_program::ID as SYSTEM_PROGRAM_ID,
+    program_pack::Pack,
 };
 
 use anchor_spl::{
-    associated_token::{create, Create, get_associated_token_address},
-    token::{self, TokenAccount, TransferChecked},
+    token::{self, TokenAccount, TransferChecked, ID as TOKEN_PROGRAM_ID},
+    associated_token::{create, Create, get_associated_token_address, ID as ASSOCIATED_TOKEN_PROGRAM_ID},
 };
+
+use spl_token::state::Account as SplTokenAccount;
 
 use std::collections::{BTreeMap, HashSet};
 
@@ -100,10 +104,6 @@ pub fn initialize_investment_info(
     Ok(())
 }
 
-
-fn extract_signer_keys(infos: &[AccountInfo]) -> Vec<Pubkey> {
-    infos.iter().filter(|i| i.is_signer).map(|i| i.key()).collect()
-}
 
 // update investment basic info
 pub fn update_investment_info(
@@ -1269,6 +1269,15 @@ where
             .find(|acc| acc.key == &entry.recipient_ata)
             .ok_or(ErrorCode::MissingAssociatedTokenAccount)?;
 
+        // Ensure vault ATA exists (create if needed)
+        ensure_ata_exists(
+            recipient_ata_info.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
+            vault.to_account_info(),
+            mint.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            signer_seeds,
+        )?;
 
         // transfer token to investor
         let result = transfer_token_checked(
@@ -1356,6 +1365,7 @@ where
     let vault = &ctx.accounts.vault;
     let vault_token_account = &ctx.accounts.vault_token_account;
     let mint = &ctx.accounts.mint;
+
 
     
     // Validate the expected info vault PDA
@@ -1457,6 +1467,16 @@ where
             .find(|acc| acc.key == &entry.recipient_ata)
             .ok_or(ErrorCode::MissingAssociatedTokenAccount)?;
 
+
+        // Ensure vault ATA exists (create if needed)
+        ensure_ata_exists(
+            recipient_ata_info.to_account_info(),
+            ctx.accounts.payer.to_account_info(),
+            vault.to_account_info(),
+            mint.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+            signer_seeds,
+        )?;
 
         // transfer token to investor
         let result = transfer_token_checked(
@@ -1586,24 +1606,20 @@ pub fn deposit_sol_to_vault(ctx: Context<DepositSolToVault>, amount: u64) -> Res
 pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
-    let payer = &ctx.accounts.payer;
-    let from = &ctx.accounts.from;
-    let mint = &ctx.accounts.mint;
-    let vault = &ctx.accounts.vault;
-    let vault_token_account = &ctx.accounts.vault_token_account;
 
-
-    // reject if investment info has been deactived or has not been completed
+    // Reject if investment info is inactive or not completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
-    require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
-
+    require!(
+        info.state == InvestmentState::Completed,
+        ErrorCode::InvestmentInfoNotCompleted
+    );
 
     // Derive the expected vault PDA
     let (vault_pda, vault_bump) = Pubkey::find_program_address(
         &[
-            b"vault", 
-            info.investment_id.as_ref(), // [u8; 15]
-            info.version.as_ref(),       // [u8; 4]
+            b"vault",
+            info.investment_id.as_ref(),
+            info.version.as_ref(),
         ],
         ctx.program_id,
     );
@@ -1616,46 +1632,50 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
         &[vault_bump],
     ];
 
-    
-    let expected_vault_token_ata = get_associated_token_address(&vault_pda, &mint.key());
-
+    // Validate mint
+    let mint = ctx.accounts.mint.key();
     require!(
-        mint.key() == get_usdt_mint() || mint.key() == get_hcoin_mint(),
+        mint == get_usdt_mint() || mint == get_hcoin_mint(),
         ErrorCode::InvalidTokenMint
     );
-    require_keys_eq!(vault_token_account.key(), expected_vault_token_ata, ErrorCode::InvalidVaultAta);
+
+    // Validate vault ATA
+    let expected_vault_token_ata = get_associated_token_address(&vault_pda, &mint);
+    require_keys_eq!(
+        ctx.accounts.vault_token_account.key(),
+        expected_vault_token_ata,
+        ErrorCode::InvalidVaultAta
+    );
 
 
-    // Ensure the vault ATA exists; create it if needed
+
+    // Ensure vault ATA exists (create if needed)
     ensure_ata_exists(
-        payer.to_account_info(),                         // funder
-        vault_token_account.to_account_info(),       // ATA of vault PDA
-        vault.to_account_info(),          // owner ATA PDA
-        mint.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.payer.to_account_info(),
+        ctx.accounts.vault.to_account_info(), // PDA 是 owner
+        ctx.accounts.mint.to_account_info(),
         ctx.accounts.system_program.to_account_info(),
-        ctx.accounts.token_program.to_account_info(),
-        ctx.accounts.associated_token_program.to_account_info(),
         signer_seeds,
     )?;
 
-    // Transfer tokens from user ATA to vault ATA
+    // Transfer token to vault ATA
     transfer_token_checked(
         ctx.accounts.token_program.to_account_info(),
-        from.to_account_info(),       // user's ATA
-        vault_token_account.to_account_info(),     // vault ATA
-        mint.to_account_info(),
-        payer.to_account_info(),  // authority (payer is signer)
+        ctx.accounts.from.to_account_info(),
+        ctx.accounts.vault_token_account.to_account_info(),
+        ctx.accounts.mint.to_account_info(),
+        ctx.accounts.payer.to_account_info(),
         Some(signer_seeds),
         amount,
-        6, // decimals
+        6,
     )?;
 
-    // Emit event for audit/logging purposes
     emit!(VaultDepositTokenEvent {
         investment_id: info.investment_id,
         version: info.version,
-        from: payer.key(),
-        mint: mint.key(),
+        from: ctx.accounts.payer.key(),
+        mint,
         amount,
         deposit_at: now,
     });
@@ -1663,6 +1683,7 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
     msg!("🟢 Deposited {} tokens to vault ATA", amount);
     Ok(())
 }
+
 
 
 
@@ -1848,44 +1869,76 @@ where
 /// Ensure ATA exists for the given mint and authority.
 #[allow(clippy::too_many_arguments)]
 pub fn ensure_ata_exists<'info>(
+    ata_account: AccountInfo<'info>,
     payer: AccountInfo<'info>,
-    associated_token: AccountInfo<'info>,
     authority: AccountInfo<'info>,
     mint: AccountInfo<'info>,
     system_program: AccountInfo<'info>,
-    token_program: AccountInfo<'info>,
-    associated_token_program: AccountInfo<'info>,
     signer_seeds: &[&[u8]],
 ) -> Result<()> {
-    // Box::leak 解法：讓 clone() 的值擁有 'info lifetime
-    let associated_token_boxed = Box::new(associated_token.clone());
-    let associated_token_ref: &'info AccountInfo<'info> = Box::leak(associated_token_boxed);
+    // If already exists and valid, just verify the owner
+    if ata_account.owner == &anchor_spl::token::ID && ata_account.data_len() > 0 {
+        let token_account_data = ata_account.try_borrow_data()?;
+        let token_account = SplTokenAccount::unpack(&token_account_data)?;
 
-    if let Ok(account) = Account::<TokenAccount>::try_from(associated_token_ref) {
         require!(
-            account.owner == authority.key(),
+            token_account.owner == *authority.key,
             ErrorCode::InvalidRecipientATA
         );
+
         return Ok(());
     }
 
-    // move 原始 associated_token 到 CPI
-    let signer_refs = [signer_seeds];
-    let cpi_ctx = CpiContext::new_with_signer(
-        associated_token_program,
-        Create {
-            payer,
-            associated_token,
-            authority,
-            mint,
-            system_program,
-            token_program,
-        },
-        &signer_refs,
+
+    // 建立 dummy lamports/data
+    let dummy_lamports_1: &'static mut u64 = Box::leak(Box::new(0u64));
+    let dummy_lamports_2: &'static mut u64 = Box::leak(Box::new(0u64));
+    let dummy_data_1: &'static mut [u8] = Box::leak(Box::new([])).as_mut();
+    let dummy_data_2: &'static mut [u8] = Box::leak(Box::new([])).as_mut();
+
+
+    // Define AccountInfos for token and associated token programs using constants
+    let token_program = AccountInfo::new(
+        &TOKEN_PROGRAM_ID,
+        false,
+        false,
+        dummy_lamports_1,
+        dummy_data_1,
+        &SYSTEM_PROGRAM_ID,
+        false,
+        0,
     );
 
-    create(cpi_ctx)
+    let associated_token_program = AccountInfo::new(
+        &ASSOCIATED_TOKEN_PROGRAM_ID,
+        false,
+        false,
+        dummy_lamports_2,
+        dummy_data_2,
+        &SYSTEM_PROGRAM_ID,
+        false,
+        0,
+    );
+
+    // Construct context and call create()
+    create(
+        CpiContext::new_with_signer(
+            associated_token_program.clone(),
+            Create {
+                payer,
+                associated_token: ata_account,
+                authority,
+                mint,
+                system_program,
+                token_program,
+            },
+            &[signer_seeds],
+        ),
+    )?;
+
+    Ok(())
 }
+
 
 
 /// execute token transfer
@@ -1900,6 +1953,16 @@ fn transfer_token_checked<'info>(
     amount: u64,
     decimals: u8,
 ) -> Result<()> {
+    require!(
+        token_program.key() == TOKEN_PROGRAM_ID,
+        ErrorCode::InvalidTokenProgramID
+    );
+
+    require!(
+        to.owner == &TOKEN_PROGRAM_ID,
+        ErrorCode::InvalidRecipientATA
+    );
+
     let cpi_accounts = TransferChecked {
         from,
         to,
@@ -1907,15 +1970,29 @@ fn transfer_token_checked<'info>(
         authority,
     };
 
-    let signer_seeds_vec;
-    let cpi_ctx = match authority_seeds {
-        Some(seeds_inner) => {
-            signer_seeds_vec = vec![seeds_inner]; // 擁有者為外層的變數
-            let signer: &[&[&[u8]]] = &signer_seeds_vec;
-            CpiContext::new_with_signer(token_program, cpi_accounts, signer)
-        }
-        None => CpiContext::new(token_program, cpi_accounts),
-    };
+    if let Some(seeds_inner) = authority_seeds {
+        msg!("🟢 using signer");
+        let signer: &[&[&[u8]]] = &[seeds_inner];
+        let cpi_ctx = CpiContext::new_with_signer(
+            token_program,
+            cpi_accounts,
+            signer,
+        );
+        token::transfer_checked(cpi_ctx, amount, decimals)?;
+    } else {
+        msg!("🟢 no signer");
+        let cpi_ctx = CpiContext::new(
+            token_program,
+            cpi_accounts,
+        );
+        token::transfer_checked(cpi_ctx, amount, decimals)?;
+    }
 
-    token::transfer_checked(cpi_ctx, amount, decimals)
+    Ok(())
+}
+
+
+
+fn extract_signer_keys(infos: &[AccountInfo]) -> Vec<Pubkey> {
+    infos.iter().filter(|i| i.is_signer).map(|i| i.key()).collect()
 }

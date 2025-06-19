@@ -31,7 +31,7 @@ describe("Investment Record management", async () => {
 
 
 	const __investmentId = "02SEHzIZfBcp223";
-	const __version = "3e2ea022";
+	const __version = "3e2ea025";
 
 
 	const batchId = 1;
@@ -192,7 +192,12 @@ describe("Investment Record management", async () => {
 				const recordId = new Anchor.BN(index);
 				const accountId = offset === 4? fix_account_id: TrimId.shortid();
 				const accountIdBytes = stringToFixedU8Array(accountId, 15);
-				const wallet = offset === 4? fix_wallet: Keypair.generate().publicKey;
+				let wallet = offset === 4? fix_wallet: Keypair.generate().publicKey;
+				const result = isValidSolanaWalletAddress(wallet);
+				if (result === false) {
+					wallet = offset === 4? fix_wallet: Keypair.generate().publicKey;
+				}
+
 				const options = [1, 5, 10];
 				const basicUsdt = 1000 * 10 ** 6;
 				const exchangeRatio = 1.05;
@@ -1137,15 +1142,14 @@ describe("Investment Record management", async () => {
 
 			for (const entry of cache.entries) {
 				const recipient = new PublicKey(entry.wallet);
-				const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient);
 
-				// const recipientAta = await getAssociatedTokenAddress(
-				// 	usdtMint,
-				// 	recipient,
-				// 	false,
-				// 	TOKEN_PROGRAM_ID,
-				// 	ASSOCIATED_TOKEN_PROGRAM_ID
-				// );
+				const recipientAta = await getAssociatedTokenAddress(
+					usdtMint,
+					recipient,
+					false,
+					TOKEN_PROGRAM_ID,
+					ASSOCIATED_TOKEN_PROGRAM_ID
+				);
 
 				const accountInfo = await provider.connection.getAccountInfo(recipientAta);
 				if (accountInfo === null) {
@@ -1180,14 +1184,14 @@ describe("Investment Record management", async () => {
 
 			for (const entry of cache.entries) {
 				const recipient = new PublicKey(entry.wallet);
-				const recipientAta = await getAssociatedTokenAddress(h2coinMint, recipient, false);
-				// const recipientAta = await getAssociatedTokenAddress(
-				// 	h2coinMint,
-				// 	recipient,
-				// 	false,
-				// 	TOKEN_PROGRAM_ID,
-				// 	ASSOCIATED_TOKEN_PROGRAM_ID
-				// );
+			
+				const recipientAta = await getAssociatedTokenAddress(
+					h2coinMint,
+					recipient,
+					false,
+					TOKEN_PROGRAM_ID,
+					ASSOCIATED_TOKEN_PROGRAM_ID
+				);
 
 				const accountInfo = await provider.connection.getAccountInfo(recipientAta);
 				
@@ -1248,14 +1252,14 @@ describe("Investment Record management", async () => {
 
 		for (const entry of cache.entries) {
 			const recipient = new Anchor.web3.PublicKey(entry.wallet);
-			const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient, false);
-			// const recipientAta = await getAssociatedTokenAddress(
-			// 	usdtMint,
-			// 	recipient,
-			// 	false,
-			// 	TOKEN_PROGRAM_ID,
-			// 	ASSOCIATED_TOKEN_PROGRAM_ID
-			// );
+			// const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient, false);
+			const recipientAta = await getAssociatedTokenAddress(
+				usdtMint,
+				recipient,
+				false,
+				TOKEN_PROGRAM_ID,
+				ASSOCIATED_TOKEN_PROGRAM_ID
+			);
 
 			const expected = recipientAta.toBase58();
 			const actual = new Anchor.web3.PublicKey(entry.recipientAta).toBase58();
@@ -1942,4 +1946,12 @@ describe("Investment Record management", async () => {
 		return { ata, ix };
 	}
 
+
+	function isValidSolanaWalletAddress(address: PublicKey): boolean {
+		try {
+			return PublicKey.isOnCurve(address.toBytes());
+		} catch (error) {
+			return false;
+		}
+	}
 });
