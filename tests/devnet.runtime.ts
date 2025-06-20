@@ -49,8 +49,10 @@ before(async()=>{
 	R.associatedTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID;
 
 
-	Runtime.usdt_mint = new PublicKey('7zpxGbRXo7qbtx4WCRo8y1vUr86B8un5x5UeSR4NLBuM');
-	Runtime.h2coin_mint = new PublicKey('7iB42yQCPgaE2aqLr8gv6irbMk8xhjVQ3sRzw5ycKAYf');
+	const usdt_mint = process.env.USDT_MINT!;
+	const h2coin_mint = process.env.H2coin_MINT!;
+	Runtime.usdt_mint = new PublicKey(usdt_mint);
+	Runtime.h2coin_mint = new PublicKey(h2coin_mint);
 
 	const investmentId = stringToFixedU8Array("02SEHzIZfBcpIZN", 15);
 	Runtime.investmentId = investmentId;
