@@ -66,6 +66,7 @@ The protocol emphasizes asset security through 3-of-5 multi-signature authorizat
 
 | Document | Description |
 | --- | --- |
+| [`Deployment_Testing.md`](./docs/Deployment_Testing.md) | Step-by-step guide for deploying and testing the H2Coin Vault Share Protocol|
 | [`Architecture.md`](./docs/Architecture.md) | Protocol design architecture overview |
 | [`AddressLookupTable_spec.md`](./docs/AddressLookupTable_spec.md) | Address Lookup Table (ALT) purpose |
 | [`Security_model_spec.md`](./docs/Security_model_spec.md) | Protocol's security architecture and assumptions |
