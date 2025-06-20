@@ -46,15 +46,15 @@ This table lists all `#[derive(Accounts)]` context structs used in the H2Coin Va
 
 | Context Name | Purpose | Key Accounts Involved |
 | --- | --- | --- |
-| `InitializeInvestmentInfo` | Initialize a new investment and vault PDA | `investment_info`, `payer`, `system_program` |
+| `InitializeInvestmentInfo` | Initialize a new investment and vault PDA | `investment_info`, `payer`, `vault`, `system_program`, `vault_usdt_account`, `vault_hcoin_account` |
 | `UpdateInvestmentInfo` | Update investment metadata (limits, version, state) | `investment_info`, `signer` |
 | `CompletedInvestmentInfo` | Mark investment as completed | `investment_info`, `signer` |
 | `DeactivateInvestmentInfo` | Mark investment as inactive (deactivated) | `investment_info`, `signer` |
 | `UpdateExecuteWallet` | Update one signer in the `execute_whitelist` | `investment_info`, `signer` |
 | `UpdateUpdateWallet` | Update one signer in the `update_whitelist` | `investment_info`, `signer` |
 | `UpdateWithdrawWallet` | Update one signer in the `withdraw_whitelist` | `investment_info`, `signer` |
-| `AddInvestmentRecords` | Add a new investment record and initialize the PDA | `investment_info`, `investment_record`, `payer`, `system_program` |
-| `UpdateInvestmentRecordWallets` | Update an existing investor wallet inside a record | `investment_info`, `payer` |
+| `AddInvestmentRecords` | Add a new investment record and initialize the PDA | `investment_info`, `investment_record`, `payer`, `vault`, `system_program`, `usdt_mint`, `hcoin_mint`, `recipient_usdt_account`, `recipient_hcoin_account` |
+| `UpdateInvestmentRecordWallets` | Update an existing investor wallet inside a record | `investment_info`, `payer`, `recipient_account`, `recipient_usdt_account`, `recipient_hcoin_account`, `usdt_mint`, `hcoin_mint`, `associated_token_program`, `token_program`, `system_program` |
 | `RevokeInvestmentRecord` | Mark an investment record as revoked | `investment_info`, `investment_record`, `payer` |
 | `EstimateProfitShare` | Estimate profit shares for a batch (creates ProfitShareCache) | `investment_info`, `cache`, `mint`, `payer`, `system_program` |
 | `ExecuteProfitShare` | Distribute USDT to investors from vault for a batch | `investment_info`, `cache`, `vault`, `vault_token_account`, `mint`, `payer`, `token_program`, `associated_token_program` |
@@ -62,7 +62,8 @@ This table lists all `#[derive(Accounts)]` context structs used in the H2Coin Va
 | `ExecuteRefundShare` | Execute H2Coin refund distribution from vault | `investment_info`, `cache`, `vault`, `vault_token_account`, `mint`, `payer`, `token_program`, `associated_token_program` |
 | `DepositSolToVault` | Deposit SOL into the vault PDA | `investment_info`, `vault`, `payer`, `system_program` |
 | `DepositTokenToVault` | Deposit USDT/H2Coin into the vault’s token account (ATA) | `investment_info`, `vault`, `from`, `mint`, `vault_token_account`, `payer`, `token_program`, `associated_token_program` |
-| `WithdrawFromVault` | Transfer remaining vault balance to withdraw whitelist wallet | `investment_info`, `vault`, `vault_token_ata`, `vault_usdt_account`, `vault_hcoin_account`, `usdt_mint`, `hcoin_mint`, `payer`, `token_program`, `system_program`, `associated_token_program` |
+| `WithdrawFromVault` | Transfer remaining vault balance to withdraw whitelist wallet | `investment_info`, `vault`, `vault_usdt_account`, `vault_hcoin_account`, `usdt_mint`, `hcoin_mint`, `recipient_account`, `recipient_usdt_account`, `recipient_hcoin_account`, `payer`, `token_program`, `system_program`, `associated_token_program`, `rent` |
+
 
 ---
 
@@ -76,7 +77,10 @@ Initializes a new `InvestmentInfo` account.
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | New PDA to be initialized |
 | `payer` | `Signer` | ✅ | Funds rent and transaction |
-| `system_program` | `Program<System>` | ❌ | Required for initialization |
+| `vault` | `UncheckedAccount` | ✅ (init_if_needed) | Derived vault PDA for SOL/token authority |
+| `system_program` | `Program<System>` | ❌ | Rent exemption |
+| `token_program` | `Program<Token>` | ❌ | Token CPI transfer check |
+| `associated_token_program` | `Program<AssociatedToken>` | ❌ | Required for ATA ops |
 
 ---
 
@@ -101,6 +105,8 @@ Modifies whitelist on `InvestmentInfo`.
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Modified via multisig |
 | `payer` | `Signer` | ✅ | Must be on multisig list |
+| `system_program` | `Program<System>` | ❌ | Rent exemption |
+
 
 ---
 
@@ -112,11 +118,17 @@ Creates a new `InvestmentRecord` for a user.
 
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
-| `investment_info` | `Account<InvestmentInfo>` | ✅ | Owner of the record |
-| `investment_record` | `Account<InvestmentRecord>` | ✅ (init) | Created with seeds |
-| `payer` | `Signer` | ✅ | Pays rent |
-| `system_program` | `Program<System>` | ❌ | Needed for init |
-
+| `investment_info` | `Account<InvestmentInfo>` | ✅ | Parent info; seeds `["investment", investment_id, version]` |
+| `investment_record` | `Account<InvestmentRecord>` | ✅ (`init`) | PDA `["record", investment_id, version, batch_id, record_id, account_id]` |
+| `usdt_mint` | `Account<Mint>` | ✅ | USDT mint (for ATA authority check) |
+| `hcoin_mint` | `Account<Mint>` | ✅ | H2COIN mint |
+| `recipient_usdt_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for investor wallet × USDT |
+| `recipient_hcoin_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for investor wallet × H2COIN |
+| `payer` | `Signer` | ✅ | Funds rent & must be in update‑whitelist multisig |
+| `rent` | `Sysvar<Rent>` | ❌ | Rent calculations |
+| `system_program` | `Program<System>` | ❌ | Needed for `init` |
+| `token_program` | `Program<Token>` | ❌ | Required for ATA creation |
+| `associated_token_program` | `Program<AssociatedToken>` | ❌ | ATA helper program |
 ---
 
 ### `UpdateInvestmentRecordWallets`
@@ -125,8 +137,17 @@ Patches wallet of existing records with same `account_id`.
 
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
-| `investment_info` | `Account<InvestmentInfo>` | ✅ | Used to validate authority |
-| `payer` | `Signer` | ✅ | Must be a multisig signer |
+| `investment_info` | `Account<InvestmentInfo>` | ✅ | Validates authority & state; seeds `["investment", investment_id, version]` |
+| `usdt_mint` | `Account<Mint>` | ✅ | Ensures ATAs correspond to USDT mint |
+| `hcoin_mint` | `Account<Mint>` | ✅ | Ensures ATAs correspond to H2COIN mint |
+| `recipient_account` | `UncheckedAccount` | ❌ | Target wallet address to patch into records |
+| `recipient_usdt_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for `recipient_account` × `usdt_mint` |
+| `recipient_hcoin_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for `recipient_account` × `hcoin_mint` |
+| `payer` | `Signer` | ✅ | Pays rent for new ATAs; must be in 3‑of‑5 **update_whitelist** |
+| `rent` | `Sysvar<Rent>` | ❌ | Rent‑exemption calculations |
+| `system_program` | `Program<System>` | ❌ | Required by `init_if_needed` |
+| `token_program` | `Program<Token>` | ❌ | SPL‑Token CPI used by ATA creation |
+| `associated_token_program` | `Program<AssociatedToken>` | ❌ | Creates ATAs when absent |
 
 ---
 
@@ -184,9 +205,9 @@ Transfers tokens to users using cached estimates.
 | `vault_token_account` | `Account<TokenAccount>` | ✅ | PDA-owned ATA |
 | `mint` | `Account<Mint>` | ✅ | Token mint (USDT/H2COIN) |
 | `payer` | `Signer` | ✅ | Signs tx |
+| `system_program` | `Program<System>` | ❌ | General ops |
 | `token_program` | `Program<Token>` | ❌ | CPI for transfer |
 | `associated_token_program` | `Program<AssociatedToken>` | ❌ | For ATA ops |
-| `system_program` | `Program<System>` | ❌ | General ops |
 
 > 📝 Recipient ATAs + ALT-resolved investor keys passed in `remaining_accounts`
 
@@ -215,13 +236,13 @@ Transfers SPL tokens into vault ATA.
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Guides vault seeds |
 | `payer` | `Signer` | ✅ | Pays rent if needed |
-| `vault` | `AccountInfo` | ❌ | PDA owner |
+| `vault` | `AccountInfo` | ❌ | PDA owner who holding SOL |
 | `from` | `Account<TokenAccount>` | ✅ | Sender's ATA |
-| `mint` | `Account<Mint>` | ✅ | Token mint |
-| `vault_token_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | Vault ATA |
+| `mint` | `Account<Mint>` | ✅ | Token mint (USDT/H2COIN) |
+| `vault_token_account` | `Account<TokenAccount>` | ✅ | PDA-owned ATA |
+| `system_program` | `Program<System>` | ❌ | Anchor system |
 | `token_program` | `Program<Token>` | ❌ | Used for transfer |
 | `associated_token_program` | `Program<AssociatedToken>` | ❌ | Creates ATA if needed |
-| `system_program` | `Program<System>` | ❌ | Anchor system |
 
 ---
 
@@ -232,17 +253,19 @@ Transfers vault funds (SOL, USDT, H2COIN) to authorized wallets.
 | Account | Type | Mutable | Description |
 | --- | --- | --- | --- |
 | `investment_info` | `Account<InvestmentInfo>` | ✅ | Lookup whitelist |
-| `payer` | `Signer` | ✅ | Initiator of tx |
-| `vault` | `AccountInfo` | ✅ | SOL vault |
-| `vault_token_ata `| `AccountInfo` | ✅ | ATA pubkey of vault |
+| `usdt_mint` | `Account<Mint>` | ✅ | Ensures ATAs correspond to USDT mint |
+| `hcoin_mint` | `Account<Mint>` | ✅ | Ensures ATAs correspond to H2COIN mint |
+| `vault` | `AccountInfo` | ✅ | PDA owner who holding SOL |
 | `vault_usdt_account` | `Account<TokenAccount>` | ✅ | USDT vault ATA |
 | `vault_hcoin_account` | `Account<TokenAccount>` | ✅ | H2COIN vault ATA |
-| `usdt_mint` | `Account<Mint>` | ✅ | USDT token mint |
-| `hcoin_mint` | `Account<Mint>` | ✅ | H2COIN token mint |
-| `token_program` | `Program<Token>` | ❌ | Token ops |
-| `associated_token_program` | `Program<AssociatedToken>` | ❌ | ATA ops |
-| `system_program` | `Program<System>` | ❌ | SYS ops |
-| `rent` | `Sysvar<Rent>` | ❌ | Rent exemption calc |
+| `recipient_account` | `UncheckedAccount` | ❌ | Target wallet address to patch into records |
+| `recipient_usdt_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for `recipient_account` × `usdt_mint` |
+| `recipient_hcoin_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for `recipient_account` × `hcoin_mint` |
+| `payer` | `Signer` | ✅ | Pays rent for new ATAs; must be in 3‑of‑5 **update_whitelist** |
+| `rent` | `Sysvar<Rent>` | ❌ | Rent‑exemption calculations |
+| `system_program` | `Program<System>` | ❌ | Required by `init_if_needed` |
+| `token_program` | `Program<Token>` | ❌ | SPL‑Token CPI used by ATA creation |
+| `associated_token_program` | `Program<AssociatedToken>` | ❌ | Creates ATAs when absent |
 
 ---
 
