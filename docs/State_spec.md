@@ -139,8 +139,8 @@ This cache prevents redundant computation and ensures that profit distribution i
 | `executed_at` | `i64` | 8 | Timestamp if executed |
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<ProfitEntry>` | 4 | Vec length prefix |
-| `entries` | — | 89 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total** | — | **2735** | Size with 30 entries |
+| `entries` | — | 57 × N | Profit entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
+| **Total** | — | **1775** | Size with 30 entries |
 
 ### 🧾 `ProfitEntry` Struct (within `ProfitShareCache`)
 
@@ -152,14 +152,13 @@ Represents a single profit-sharing record inside a batch.
 | `wallet` | `Pubkey` | 32 | Wallet address |
 | `amount_usdt` | `u64` | 8 | USDT share |
 | `ratio_bp` | `u16` | 2 | Ratio in basis points |
-| `recipient_ata` | `Pubkey` | 32 | Associated token address |
-| **Total** | — | **89** | Entry size |
+| **Total** | — | **57** | Entry size |
 
 #### Constants
 
-*   `ENTRY_SIZE` = 89 bytes
+*   `ENTRY_SIZE` = 57 bytes
 *   `Basic SIZE` = 65 bytes
-*   `Total SIZE` = 2735 bytes
+*   `Total SIZE` = 1775 bytes
 *   `MAX_ENTRIES_PER_BATCH` = 30 entries
 
 Returns the refund percentage based on stage and year index. Returns 0 if inputs are invalid.
@@ -182,8 +181,8 @@ Stores refund estimation by year and stage for one batch.
 | `executed_at` | `i64` | 8 | Timestamp if executed |
 | `created_at` | `i64` | 8 | Cache creation time |
 | `entries (prefix)` | `Vec<RefundEntry>` | 4 | Vec length prefix |
-| `entries` | — | 91 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
-| **Total** | — | **2706** | Size with 30 entries |
+| `entries` | — | 56 × N | Refund entries (N ≤ `MAX_ENTRIES_PER_BATCH`) |
+| **Total** | — | **1746** | Size with 30 entries |
 
 ### 📑 `RefundEntry`
 
@@ -193,14 +192,13 @@ Stores refund estimation by year and stage for one batch.
 | `wallet` | `Pubkey` | 32 | Wallet address |
 | `amount_hcoin` | `u64` | 8 | H2COIN refund amount |
 | `stage` | `u8` | 1 | Investment stage |
-| `recipient_ata` | `Pubkey` | 32 | Associated token address |
-| **Total** | — | **88** | Entry size |
+| **Total** | — | **56** | Entry size |
 
 #### Constants
 
-*   `ENTRY_SIZE` = 88 bytes
+*   `ENTRY_SIZE` = 56 bytes
 *   `Basic SIZE` = 66 bytes
-*   `Total SIZE` = 2706 bytes
+*   `Total SIZE` = 1746 bytes
 *   `MAX_ENTRIES_PER_BATCH` = 30 entries
 
 Returns the refund percentage based on stage and year index. Returns 0 if inputs are invalid.
