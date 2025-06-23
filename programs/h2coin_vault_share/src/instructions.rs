@@ -4,19 +4,16 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{
     pubkey::Pubkey,
-    program::{invoke, invoke_signed},
-    system_instruction,
-    account_info::AccountInfo,
-    system_program::ID as SYSTEM_PROGRAM_ID,
-    program_pack::Pack,
+    account_info::{AccountInfo},
 };
+
+use anchor_lang::system_program::{self, Transfer};
 
 use anchor_spl::{
-    token::{self, TokenAccount, TransferChecked, ID as TOKEN_PROGRAM_ID},
-    associated_token::{create, Create, get_associated_token_address, ID as ASSOCIATED_TOKEN_PROGRAM_ID},
+    token::{self, TransferChecked, ID as TOKEN_PROGRAM_ID},
+    associated_token::{get_associated_token_address},
 };
 
-use spl_token::state::Account as SplTokenAccount;
 
 use std::collections::{BTreeMap, HashSet};
 
@@ -29,7 +26,9 @@ use crate::error::ErrorCode;
 
 
 //================ handle investment info ================
-/// A 30-element refund percentage table, flattened as 3 stages × 10 years (stage0[0..10], stage1[10..25], stage2[25..30])
+/// A 30-element refund percentage table, flattened as 3 stages × 10 years
+/// Stage0 occupies index [0..10], Stage1 occupies [10..25], Stage2 occupies [25..30]
+/// Used to calculate yearly refunds per investment stage and year
 #[allow(clippy::too_many_arguments)]
 pub fn initialize_investment_info(
     ctx: Context<InitializeInvestmentInfo>,
@@ -46,6 +45,10 @@ pub fn initialize_investment_info(
 ) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
     let info = &mut ctx.accounts.investment_info;
+    let vault = &ctx.accounts.vault;
+    let vault_usdt_account = &ctx.accounts.vault_usdt_account;
+    let vault_hcoin_account = &ctx.accounts.vault_hcoin_account;
+
 
     require!(info.investment_id.len() == 15, ErrorCode::InvalidInvestmentIdLength);
     require!(execute_whitelist.len() == 5, ErrorCode::WhitelistMustBeFive);
@@ -71,7 +74,13 @@ pub fn initialize_investment_info(
         ],
         ctx.program_id,
     );
-    msg!("🟢 Vault PDA: {}", vault_pda);
+    require_keys_eq!(vault_pda.key(), vault.key(), ErrorCode::InvalidInvestmentInfoPda);
+
+
+    require_keys_eq!(vault_usdt_account.mint, ctx.accounts.usdt_mint.key(), ErrorCode::InvalidTokenMint);
+    require_keys_eq!(vault_usdt_account.owner, vault.key(), ErrorCode::InvalidVaultOwner);
+    require_keys_eq!(vault_hcoin_account.mint, ctx.accounts.hcoin_mint.key(), ErrorCode::InvalidTokenMint);
+    require_keys_eq!(vault_hcoin_account.owner, vault.key(), ErrorCode::InvalidVaultOwner);
 
 
     info.investment_id = investment_id;
@@ -91,8 +100,6 @@ pub fn initialize_investment_info(
 
     info.validate_stage_ratio()?;
 
-    msg!("🟢 initialize_investment_info: {:?}", info);
-
     emit!(InvestmentInfoInitialized {
         investment_id,
         version: info.version,
@@ -102,6 +109,14 @@ pub fn initialize_investment_info(
     });
 
     Ok(())
+}
+
+
+/// Extracts the public keys of all signers from a list of AccountInfo objects
+/// - Filters only accounts that have signed the transaction
+/// - Returns a vector of corresponding Pubkeys
+fn extract_signer_keys(infos: &[AccountInfo]) -> Vec<Pubkey> {
+    infos.iter().filter(|i| i.is_signer).map(|i| i.key()).collect()
 }
 
 
@@ -494,7 +509,6 @@ pub fn add_investment_record(
     batch_id: u16,
     record_id: u64,
     account_id: [u8; 15],
-    wallet: Pubkey,
     amount_usdt: u64,
     amount_hcoin: u64,
     stage: u8,
@@ -502,6 +516,13 @@ pub fn add_investment_record(
     let now = Clock::get()?.unix_timestamp;
     let info = &mut ctx.accounts.investment_info;
     let record = &mut ctx.accounts.investment_record;
+    
+    let usdt_mint = &ctx.accounts.usdt_mint;
+    let hcoin_mint = &ctx.accounts.hcoin_mint;
+
+    let recipient_account = &ctx.accounts.recipient_account;
+    let recipient_usdt_account = &ctx.accounts.recipient_usdt_account;
+    let recipient_hcoin_account = &ctx.accounts.recipient_hcoin_account;
 
 
     // Validate info PDA
@@ -544,13 +565,19 @@ pub fn add_investment_record(
     
 
 
+    require_keys_eq!(recipient_usdt_account.owner, recipient_account.key(), ErrorCode::InvalidRecipientOwner);
+    require_keys_eq!(recipient_hcoin_account.owner, recipient_account.key(), ErrorCode::InvalidRecipientOwner);
+    require_keys_eq!(recipient_usdt_account.mint, usdt_mint.key(), ErrorCode::InvalidRecipientMint);
+    require_keys_eq!(recipient_hcoin_account.mint, hcoin_mint.key(), ErrorCode::InvalidRecipientMint);
+
+
     // Write record data
     record.batch_id = batch_id;
     record.record_id = record_id;
     record.account_id = account_id;
     record.investment_id = info.investment_id;
     record.version = info.version;
-    record.wallet = wallet;
+    record.wallet = recipient_account.key();
     record.amount_usdt = amount_usdt;
     record.amount_hcoin = amount_hcoin;
     record.stage = stage;
@@ -575,23 +602,38 @@ pub fn add_investment_record(
     Ok(())
 }
 
-// update an investor wallet
+
+/// Updates the wallet address for matching InvestmentRecords under a given `account_id`
+/// - Requires 3-of-5 multisig approval
+/// - Validates associated token accounts for USDT and H2COIN of the new wallet
+/// - Iterates over remaining accounts to find and update matching InvestmentRecords
+/// - Emits `InvestmentRecordWalletUpdated` event after success
 pub fn update_investment_record_wallets<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, UpdateInvestmentRecordWallets<'info>>,
     account_id: [u8; 15],
-    new_wallet: Pubkey,
 ) -> Result<()> 
 where 
     'c: 'info,
 {
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
+    let usdt_mint = &ctx.accounts.usdt_mint;
+    let hcoin_mint = &ctx.accounts.hcoin_mint;
+
+    let recipient_account = &ctx.accounts.recipient_account;
+    let recipient_usdt_account = &ctx.accounts.recipient_usdt_account;
+    let recipient_hcoin_account = &ctx.accounts.recipient_hcoin_account;
     
-    // 1. Validate investment is active and completed
+    
+    // 1. Validate investment_info is active and recipient_account
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
+    require_keys_eq!(recipient_usdt_account.owner, recipient_account.key(), ErrorCode::InvalidRecipientOwner);
+    require_keys_eq!(recipient_hcoin_account.owner, recipient_account.key(), ErrorCode::InvalidRecipientOwner);
+    require_keys_eq!(recipient_usdt_account.mint, usdt_mint.key(), ErrorCode::InvalidRecipientMint);
+    require_keys_eq!(recipient_hcoin_account.mint, hcoin_mint.key(), ErrorCode::InvalidRecipientMint);
 
 
-    // 3. multisig check
+    // 2. 3-of-5 multisig 驗證
     let signer_infos = &ctx.remaining_accounts[..3];
     let signer_keys = extract_signer_keys(signer_infos);
     info.enforce_3_of_5_signers(signer_infos, true)?;
@@ -624,35 +666,35 @@ where
             continue;
         }
 
-        if record.wallet == new_wallet {
+        if record.wallet == recipient_account.key() {
             continue;
         }
 
         // update the wallet
-        record.wallet = new_wallet;
+        record.wallet = recipient_account.key();
 
         // serialize back to account data
         record.try_serialize(&mut &mut data[..])?;
 
         //increment updated count
-        updated_count += 1;
-        
+        updated_count += 1;        
     }
+
+    require!(updated_count > 0, ErrorCode::NoRecordsUpdated);
+
 
     emit!(InvestmentRecordWalletUpdated {
         investment_id: info.investment_id,
         version: info.version,
         account_id,
-        new_wallet,
+        new_wallet: recipient_account.key(),
         updated_by: ctx.accounts.payer.key(),
         updated_at: now,
         signers: signer_keys.clone(),
     });
-
-
+    
+    
     msg!("🟢 record update count: {}", updated_count);
-    require!(updated_count > 0, ErrorCode::NoRecordsUpdated);
-
     Ok(())
 }
 
@@ -878,19 +920,13 @@ where
 
         subtotal_profit_usdt = subtotal_profit_usdt
             .checked_add(amount)
-            .ok_or(ErrorCode::NumericalOverflow)?;
-
-
-        // Genereate recipient ATA for validate 
-        let recipient_ata = get_associated_token_address(&wallet, &mint.key());
-        
+            .ok_or(ErrorCode::NumericalOverflow)?;        
 
         entries.push(ProfitEntry {
             account_id: record.account_id,
             wallet,
             amount_usdt: amount,
             ratio_bp,
-            recipient_ata
         });
     }
 
@@ -949,8 +985,9 @@ where
 {
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
-    let mint = &ctx.accounts.mint;
     let cache = &mut ctx.accounts.cache;
+    let mint = &ctx.accounts.mint;
+    
 
 
     // Validate the expected info vault PDA
@@ -1094,17 +1131,11 @@ where
             .checked_add(amount)
             .ok_or(ErrorCode::NumericalOverflow)?;
 
-
-        // Genereate recipient ATA for validate    
-        let recipient_ata = get_associated_token_address(&wallet, &mint.key());
-
-
         entries.push(RefundEntry {
             account_id: record.account_id,
             wallet,
             amount_hcoin: amount,
             stage: record.stage,
-            recipient_ata
         });
     }
 
@@ -1171,10 +1202,11 @@ where
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
     let cache = &mut ctx.accounts.cache;
+    let mint = &ctx.accounts.mint;
     let vault = &ctx.accounts.vault;
     let vault_token_account = &ctx.accounts.vault_token_account;
-    let mint = &ctx.accounts.mint;
 
+    
 
     // Validate the expected info vault PDA
     let (expected_info_pda, _bump) = Pubkey::find_program_address(
@@ -1245,52 +1277,48 @@ where
     let signer_keys = extract_signer_keys(signer_infos);
     info.enforce_3_of_5_signers(signer_infos, false)?;
 
-
+    
     // Token checks
     require_keys_eq!(mint.key(), get_usdt_mint(), ErrorCode::InvalidTokenMint);
     require_keys_eq!(vault_token_account.mint, mint.key(), ErrorCode::InvalidTokenMint);
-    msg!("🟢 BatchId: {}, Vault Token USDT balance: {}", batch_id, vault_token_account.amount);
-    msg!("🟢 BatchId: {}, Required subtotal_profit_usdt: {}", batch_id, cache.subtotal_profit_usdt);
     require!(vault_token_account.amount >= cache.subtotal_profit_usdt, ErrorCode::InsufficientTokenBalance);
     require!(vault.to_account_info().lamports() >= cache.subtotal_estimate_sol, ErrorCode::InsufficientSolBalance);
+    msg!("🟢 BatchId: {}, Vault Token USDT balance: {}", batch_id, vault_token_account.amount);
+    msg!("🟢 BatchId: {}, Required subtotal_profit_usdt: {}", batch_id, cache.subtotal_profit_usdt);
 
 
     let mut total_transferred: u64 = 0;
     let mut successes: Vec<Pubkey> = vec![];
-    let mut failures: Vec<(Pubkey, String)> = vec![];
+    let mut failures: Vec<Pubkey> = vec![];
 
     for entry in cache.entries.iter() {
         let recipient = entry.wallet;
-    
+        let recipient_ata = get_associated_token_address(&recipient, &mint.key());
 
         let recipient_ata_info = ctx
             .remaining_accounts[3..]
             .iter()
-            .find(|acc| acc.key == &entry.recipient_ata)
+            .find(|acc| acc.key == &recipient_ata)
             .ok_or(ErrorCode::MissingAssociatedTokenAccount)?;
 
-        // Ensure vault ATA exists (create if needed)
-        ensure_ata_exists(
-            recipient_ata_info.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            vault.to_account_info(),
-            mint.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-            signer_seeds,
-        )?;
+        // let ata_info = recipient_ata_info;
+        // msg!("🟢 recipient: {}, derived ATA: {}", recipient, recipient_ata_info.key);
+        // msg!("    key: {}", ata_info.key);
+        // msg!("    owner: {}", ata_info.owner);
+        // msg!("    is_signer: {}", ata_info.is_signer);
+        // msg!("    is_writable: {}", ata_info.is_writable);
 
-        // transfer token to investor
+        // transfer token to investors
         let result = transfer_token_checked(
             ctx.accounts.token_program.to_account_info(),
             vault_token_account.to_account_info(),
             recipient_ata_info.to_account_info(),
-            mint.to_account_info(),
+            ctx.accounts.mint.to_account_info(),
             vault.to_account_info(),
             Some(signer_seeds),
             entry.amount_usdt,
             mint.decimals,
         );
-
 
         match result {
             Ok(_) => {
@@ -1299,17 +1327,17 @@ where
                     .checked_add(entry.amount_usdt)
                     .ok_or(ErrorCode::NumericalOverflow)?;
 
-                emit!(ProfitPaidEvent {
-                    investment_id: info.investment_id,
-                    version: info.version,
-                    to: recipient,
-                    amount_usdt: entry.amount_usdt,
-                    pay_at: now,
-                });
+                // emit!(ProfitPaidEvent {
+                //     investment_id: info.investment_id,
+                //     version: info.version,
+                //     to: recipient,
+                //     amount_usdt: entry.amount_usdt,
+                //     pay_at: now,
+                // });
             }
-            Err(e) => {
-                failures.push((recipient, format!("{:?}", e)));
-                msg!("❌ Transfer to {} failed: {:?}", recipient, e);
+            Err(_e) => {
+                failures.push(recipient);
+                // msg!("❌ Transfer to {} failed: {:?}", recipient, e);
             }
         }
     }
@@ -1325,7 +1353,6 @@ where
     } else {
         msg!("⚠️ Partial success: {} succeeded, {} failed", successes.len(), failures.len());
     }
-
 
 
     emit!(ProfitShareExecuted {
@@ -1365,6 +1392,7 @@ where
     let vault = &ctx.accounts.vault;
     let vault_token_account = &ctx.accounts.vault_token_account;
     let mint = &ctx.accounts.mint;
+
 
 
     
@@ -1460,30 +1488,20 @@ where
 
     for entry in cache.entries.iter() {
         let recipient = entry.wallet;
+        let recipient_ata = get_associated_token_address(&recipient, &mint.key());
             
         let recipient_ata_info = ctx
             .remaining_accounts[3..]
             .iter()
-            .find(|acc| acc.key == &entry.recipient_ata)
+            .find(|acc| acc.key == &recipient_ata)
             .ok_or(ErrorCode::MissingAssociatedTokenAccount)?;
-
-
-        // Ensure vault ATA exists (create if needed)
-        ensure_ata_exists(
-            recipient_ata_info.to_account_info(),
-            ctx.accounts.payer.to_account_info(),
-            vault.to_account_info(),
-            mint.to_account_info(),
-            ctx.accounts.system_program.to_account_info(),
-            signer_seeds,
-        )?;
 
         // transfer token to investor
         let result = transfer_token_checked(
             ctx.accounts.token_program.to_account_info(),
             vault_token_account.to_account_info(),
             recipient_ata_info.to_account_info(),
-            mint.to_account_info(),
+            ctx.accounts.mint.to_account_info(),
             vault.to_account_info(),
             Some(signer_seeds),
             entry.amount_hcoin,
@@ -1572,21 +1590,14 @@ pub fn deposit_sol_to_vault(ctx: Context<DepositSolToVault>, amount: u64) -> Res
     require!(vault.key() == vault_pda && vault.key() == info.vault, ErrorCode::InvalidVaultPda);
 
 
-    let ix = system_instruction::transfer(
-        &payer.key(),
-        &vault.key(),
-        amount,
+    let cpi_ctx = CpiContext::new(
+        system_program.to_account_info(),
+        Transfer {
+            from: payer.to_account_info(),
+            to: vault.to_account_info(),
+        },
     );
-
-    // Transfer SOL from payer to vault using system program
-    invoke(
-        &ix,
-        &[
-            payer.to_account_info(),
-            vault.to_account_info(),
-            system_program.to_account_info(),
-        ],
-    )?;
+    system_program::transfer(cpi_ctx, amount)?;
 
     // Emit event for audit/logging purposes
     emit!(VaultDepositSolEvent {
@@ -1606,6 +1617,9 @@ pub fn deposit_sol_to_vault(ctx: Context<DepositSolToVault>, amount: u64) -> Res
 pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
+    let vault = &ctx.accounts.vault;
+    let vault_token_account = &ctx.accounts.vault_token_account;
+
 
     // Reject if investment info is inactive or not completed
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
@@ -1615,7 +1629,7 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
     );
 
     // Derive the expected vault PDA
-    let (vault_pda, vault_bump) = Pubkey::find_program_address(
+    let (vault_pda, _) = Pubkey::find_program_address(
         &[
             b"vault",
             info.investment_id.as_ref(),
@@ -1623,14 +1637,7 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
         ],
         ctx.program_id,
     );
-
-    // Prepare PDA signer seeds
-    let signer_seeds: &[&[u8]] = &[
-        b"vault",
-        info.investment_id.as_ref(),
-        info.version.as_ref(),
-        &[vault_bump],
-    ];
+    require!(vault.key() == vault_pda && vault.key() == info.vault, ErrorCode::InvalidVaultPda);
 
     // Validate mint
     let mint = ctx.accounts.mint.key();
@@ -1646,31 +1653,29 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
         expected_vault_token_ata,
         ErrorCode::InvalidVaultAta
     );
+    msg!("🟢 from.owner: {}", ctx.accounts.from.owner);
+    msg!("🟢 payer: {}", ctx.accounts.payer.key());
 
+    require_keys_eq!(
+        ctx.accounts.from.owner.key(),
+        ctx.accounts.payer.key(),
+        ErrorCode::InvalidFromOwner
+    );
 
-
-    // Ensure vault ATA exists (create if needed)
-    ensure_ata_exists(
-        ctx.accounts.vault_token_account.to_account_info(),
-        ctx.accounts.payer.to_account_info(),
-        ctx.accounts.vault.to_account_info(), // PDA 是 owner
-        ctx.accounts.mint.to_account_info(),
-        ctx.accounts.system_program.to_account_info(),
-        signer_seeds,
-    )?;
 
     // Transfer token to vault ATA
     transfer_token_checked(
         ctx.accounts.token_program.to_account_info(),
         ctx.accounts.from.to_account_info(),
-        ctx.accounts.vault_token_account.to_account_info(),
+        vault_token_account.to_account_info(),
         ctx.accounts.mint.to_account_info(),
         ctx.accounts.payer.to_account_info(),
-        Some(signer_seeds),
+        None,
         amount,
-        6,
+        ctx.accounts.mint.decimals,
     )?;
 
+    
     emit!(VaultDepositTokenEvent {
         investment_id: info.investment_id,
         version: info.version,
@@ -1680,7 +1685,7 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
         deposit_at: now,
     });
 
-    msg!("🟢 Deposited {} tokens to vault ATA", amount);
+
     Ok(())
 }
 
@@ -1692,7 +1697,6 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
 /// Requires 3-of-5 execute whitelist signatures.
 pub fn withdraw_from_vault<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, WithdrawFromVault<'info>>,
-    recipient: Pubkey,
 ) -> Result<()>
 where
     'c: 'info,
@@ -1701,6 +1705,17 @@ where
     let info = &ctx.accounts.investment_info;
     let usdt_mint = &ctx.accounts.usdt_mint;
     let hcoin_mint = &ctx.accounts.hcoin_mint;
+
+
+    let vault = &ctx.accounts.vault;
+    let vault_usdt_account = &ctx.accounts.vault_usdt_account;
+    let vault_hcoin_account = &ctx.accounts.vault_usdt_account;
+
+    
+    let recipient_account = &ctx.accounts.recipient_account;
+    let recipient_usdt_account = &ctx.accounts.recipient_usdt_account;
+    let recipient_hcoin_account = &ctx.accounts.recipient_hcoin_account;
+
 
 
     // reject if investment info has been deactived or has not been completed
@@ -1712,15 +1727,6 @@ where
     let signer_infos: &[AccountInfo<'info>] = &ctx.remaining_accounts[0..3];
     let signer_keys = extract_signer_keys(signer_infos);
     info.enforce_3_of_5_signers(signer_infos, false)?;
-
-
-    // Load all involved accounts (vault & recipient ATAs)
-    let vault_pda_info = &ctx.remaining_accounts[3];
-    let vault_usdt_ata_info = &ctx.remaining_accounts[4];
-    let vault_hcoin_ata_info = &ctx.remaining_accounts[5];
-    let recipient_info = &ctx.remaining_accounts[6];
-    let recipient_usdt_ata_info = &ctx.remaining_accounts[7];
-    let recipient_hcoin_ata_info = &ctx.remaining_accounts[8];
 
 
     // Derive vault PDA and verify correctness
@@ -1739,108 +1745,76 @@ where
         &[vault_bump],
     ];
     require!(
-        vault_pda_info.key() == info.vault && vault_pda.key() == info.vault, 
+        vault.key() == info.vault && vault_pda.key() == info.vault, 
         ErrorCode::InvalidVaultPda
-    );
-
-
-    // Load and validate vault token accounts
-    let vault_usdt_ata = Account::<TokenAccount>::try_from(vault_usdt_ata_info)?;
-    require!(
-        vault_usdt_ata.mint == usdt_mint.key(),
-        ErrorCode::InvalidTokenMint
-    );
-
-    let vault_hcoin_ata = Account::<TokenAccount>::try_from(vault_hcoin_ata_info)?;
-    require!(
-        vault_hcoin_ata.mint == hcoin_mint.key(),
-        ErrorCode::InvalidTokenMint
     );
 
 
     // Check recipient is on withdraw whitelist
     require!(!info.withdraw_whitelist.is_empty(), ErrorCode::EmptyWhitelist);
-    require!(info.withdraw_whitelist.contains(&recipient), ErrorCode::UnauthorizedRecipient);
-    require_keys_eq!(recipient_info.key(), recipient, ErrorCode::InvalidRecipientAddress);
+    require!(info.withdraw_whitelist.contains(&recipient_account.key()), ErrorCode::UnauthorizedRecipient);
 
 
 
     // Transfer USDT if balance > 0 and vault ATA owner is correct
-    if let Ok(vault_usdt_account) = Account::<TokenAccount>::try_from(vault_usdt_ata_info) {
-        require_keys_eq!(
-            vault_usdt_ata.owner,
-            vault_pda_info.key(),
-            ErrorCode::InvalidVaultTokenAccount
-        );
-
-        if vault_usdt_account.amount > 0 {
-            transfer_token_checked(
-                ctx.accounts.token_program.to_account_info(),
-                vault_usdt_ata_info.clone(),
-                recipient_usdt_ata_info.clone(),
-                usdt_mint.to_account_info(),
-                vault_pda_info.to_account_info(),
-                Some(signer_seeds),
-                vault_usdt_account.amount,
-                usdt_mint.decimals,
-            )?;
-        } else {
-            msg!("🟡 Vault USDT amount = 0, skip transfer");
-        }
+    if vault_usdt_account.mint == usdt_mint.key() && vault_usdt_account.amount > 0 {
+        // Transfer token from vault ATA to rerceipient ATA
+        transfer_token_checked(
+            ctx.accounts.token_program.to_account_info(),
+            vault_usdt_account.to_account_info(),
+            recipient_usdt_account.to_account_info(),
+            usdt_mint.to_account_info(),
+            vault.to_account_info(),
+            Some(signer_seeds),
+            vault_usdt_account.amount,
+            usdt_mint.decimals,
+        )?;
     } else {
-        msg!("🟡 Vault USDT ATA not initialized, skip transfer");
+        msg!("🟡 Vault USDT amount = 0, skip transfer");
+    }
+ 
+
+    // Transfer H2COIN if balance > 0 and vault ATA owner is correct   
+    if vault_hcoin_account.mint == hcoin_mint.key() && vault_hcoin_account.amount > 0 {
+        // Transfer token from vault ATA to rerceipient ATA
+        transfer_token_checked(
+            ctx.accounts.token_program.to_account_info(),
+            vault_hcoin_account.to_account_info(),
+            recipient_hcoin_account.to_account_info(),
+            hcoin_mint.to_account_info(),
+            vault.to_account_info(),
+            Some(signer_seeds),
+            vault_hcoin_account.amount,
+            hcoin_mint.decimals,
+        )?;
+    } else {
+        msg!("🟡 Vault H2COIN amount = 0, skip transfer");
     }
 
-    // Transfer H2COIN if balance > 0 and vault ATA owner is correct
-    if let Ok(vault_hcoin_account) = Account::<TokenAccount>::try_from(vault_hcoin_ata_info) {
-        require_keys_eq!(
-            vault_hcoin_ata.owner,
-            vault_pda_info.key(),
-            ErrorCode::InvalidVaultTokenAccount
-        );
-
-        if vault_hcoin_account.amount > 0 {
-            transfer_token_checked(
-                ctx.accounts.token_program.to_account_info(),
-                vault_hcoin_ata_info.clone(),
-                recipient_hcoin_ata_info.clone(),
-                hcoin_mint.to_account_info(),
-                vault_pda_info.to_account_info(),
-                Some(signer_seeds),
-                vault_hcoin_account.amount,
-                hcoin_mint.decimals,
-            )?;
-        } else {
-            msg!("🟡 Vault H2COIN amount = 0, skip transfer");
-        }
-    } else {
-        msg!("🟡 Vault H2COIN ATA not initialized, skip transfer");
-    }
 
 
     // Get lamport balance and calculate rent-exempt threshold
-    let remaining_lamports = vault_pda_info.lamports();
-    let rent_exempt = Rent::get()?.minimum_balance(vault_pda_info.data_len());
-    let withdraw_lamports = vault_pda_info.lamports()
+    let remaining_lamports = vault.lamports();
+    let rent_exempt = Rent::get()?.minimum_balance(vault.data_len());
+    let withdraw_lamports = vault.lamports()
         .saturating_sub(rent_exempt)
         .saturating_sub(ESTIMATE_SOL_BASE)
         .saturating_sub(ESTIMATE_SOL_PER_ENTRY);
 
     // Transfer SOL if available
     if withdraw_lamports > 0 {
-        invoke_signed(
-            &system_instruction::transfer(
-                &vault_pda_info.key(), 
-                &recipient_info.key(), 
-                withdraw_lamports
-            ),
-            &[
-                vault_pda_info.clone(),
-                recipient_info.clone(),
-                ctx.accounts.system_program.to_account_info(),
-            ],
-            &[signer_seeds],
-        )?;
+        let signer: &[&[&[u8]]] = &[signer_seeds];
+
+        let cpi_ctx = CpiContext::new_with_signer(
+            ctx.accounts.system_program.to_account_info(),
+            Transfer {
+                from: vault.to_account_info(),
+                to: vault.to_account_info(),
+            },
+            signer,
+        );
+
+        system_program::transfer(cpi_ctx, withdraw_lamports)?;
 
         msg!("🟢 Transferred {} lamports from vault to recipient", withdraw_lamports);
     } else {
@@ -1852,10 +1826,10 @@ where
     emit!(VaultTransferred {
         investment_id: info.investment_id,
         version: info.version,
-        recipient,
+        recipient: recipient_account.key(),
         sol_amount: remaining_lamports,
-        usdt_amount: vault_usdt_ata.amount,
-        hcoin_amount: vault_hcoin_ata.amount,
+        usdt_amount: vault_usdt_account.amount,
+        hcoin_amount: vault_hcoin_account.amount,
         executed_by: ctx.accounts.payer.key(),
         executed_at: now,
         signers: signer_keys.clone(),
@@ -1863,83 +1837,6 @@ where
 
     Ok(())
 }
-
-
-
-/// Ensure ATA exists for the given mint and authority.
-#[allow(clippy::too_many_arguments)]
-pub fn ensure_ata_exists<'info>(
-    ata_account: AccountInfo<'info>,
-    payer: AccountInfo<'info>,
-    authority: AccountInfo<'info>,
-    mint: AccountInfo<'info>,
-    system_program: AccountInfo<'info>,
-    signer_seeds: &[&[u8]],
-) -> Result<()> {
-    // If already exists and valid, just verify the owner
-    if ata_account.owner == &anchor_spl::token::ID && ata_account.data_len() > 0 {
-        let token_account_data = ata_account.try_borrow_data()?;
-        let token_account = SplTokenAccount::unpack(&token_account_data)?;
-
-        require!(
-            token_account.owner == *authority.key,
-            ErrorCode::InvalidRecipientATA
-        );
-
-        return Ok(());
-    }
-
-
-    // 建立 dummy lamports/data
-    let dummy_lamports_1: &'static mut u64 = Box::leak(Box::new(0u64));
-    let dummy_lamports_2: &'static mut u64 = Box::leak(Box::new(0u64));
-    let dummy_data_1: &'static mut [u8] = Box::leak(Box::new([])).as_mut();
-    let dummy_data_2: &'static mut [u8] = Box::leak(Box::new([])).as_mut();
-
-
-    // Define AccountInfos for token and associated token programs using constants
-    let token_program = AccountInfo::new(
-        &TOKEN_PROGRAM_ID,
-        false,
-        false,
-        dummy_lamports_1,
-        dummy_data_1,
-        &SYSTEM_PROGRAM_ID,
-        false,
-        0,
-    );
-
-    let associated_token_program = AccountInfo::new(
-        &ASSOCIATED_TOKEN_PROGRAM_ID,
-        false,
-        false,
-        dummy_lamports_2,
-        dummy_data_2,
-        &SYSTEM_PROGRAM_ID,
-        false,
-        0,
-    );
-
-    // Construct context and call create()
-    create(
-        CpiContext::new_with_signer(
-            associated_token_program.clone(),
-            Create {
-                payer,
-                associated_token: ata_account,
-                authority,
-                mint,
-                system_program,
-                token_program,
-            },
-            &[signer_seeds],
-        ),
-    )?;
-
-    Ok(())
-}
-
-
 
 /// execute token transfer
 #[allow(clippy::too_many_arguments)]
@@ -1971,16 +1868,25 @@ fn transfer_token_checked<'info>(
     };
 
     if let Some(seeds_inner) = authority_seeds {
-        msg!("🟢 using signer");
-        let signer: &[&[&[u8]]] = &[seeds_inner];
-        let cpi_ctx = CpiContext::new_with_signer(
-            token_program,
-            cpi_accounts,
-            signer,
-        );
-        token::transfer_checked(cpi_ctx, amount, decimals)?;
+        if !seeds_inner.is_empty() {
+            msg!("🟢 using PDA signer with {} seed(s)", seeds_inner.len());
+            let signer: &[&[&[u8]]] = &[seeds_inner];
+            let cpi_ctx = CpiContext::new_with_signer(
+                token_program,
+                cpi_accounts,
+                signer,
+            );
+            token::transfer_checked(cpi_ctx, amount, decimals)?;
+        } else {
+            msg!("🟢 signer seeds is empty → using no signer");
+            let cpi_ctx = CpiContext::new(
+                token_program,
+                cpi_accounts,
+            );
+            token::transfer_checked(cpi_ctx, amount, decimals)?;
+        }
     } else {
-        msg!("🟢 no signer");
+        msg!("🟢 no signer (authority is expected to be a wallet)");
         let cpi_ctx = CpiContext::new(
             token_program,
             cpi_accounts,
@@ -1989,10 +1895,4 @@ fn transfer_token_checked<'info>(
     }
 
     Ok(())
-}
-
-
-
-fn extract_signer_keys(infos: &[AccountInfo]) -> Vec<Pubkey> {
-    infos.iter().filter(|i| i.is_signer).map(|i| i.key()).collect()
 }

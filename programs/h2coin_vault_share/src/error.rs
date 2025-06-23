@@ -99,17 +99,24 @@ pub enum ErrorCode {
     #[msg("🔴 Invalid Vault PDA")]
     InvalidVaultPda,
 
-    #[msg("🔴 Vault token account mint is not USDT")]
+    #[msg("🔴 Vault token account mint is not USDT or H2coin.")]
     InvalidTokenMint,
 
     #[msg("🔴 The provided vault ATA does not match the expected associated token address.")]
     InvalidVaultAta,
 
-    #[msg("🔴 Recipient token account mint is not USDT or H2coin")]
+    #[msg("🔴 Recipient token account mint is not USDT or H2coin.")]
     InvalidRecipientMint,
 
     #[msg("🔴 Vault token account owner mismatch.")]
-    InvalidVaultTokenAccount,
+    InvalidVaultOwner,
+
+    #[msg("🔴 From token account owner mismatch.")]
+    InvalidFromOwner,
+
+    #[msg("🔴 Recipient token account owner mismatch.")]
+    InvalidRecipientOwner,
+
 
     // ────────────────────────────────
     // 📈 Profit Share Cache

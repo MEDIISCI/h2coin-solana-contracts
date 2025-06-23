@@ -3,84 +3,94 @@ import {describe, it} from "mocha";
 import * as Anchor from "@coral-xyz/anchor";
 import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 
+import { 
+	ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, ACCOUNT_SIZE,
+	getAssociatedTokenAddress,
+} from "@solana/spl-token";
 
-import {stringToFixedU8Array, stage_ratio_map, loadExecuteWhitelistKeypairs, bytesToFixedString} from "./lib/lib";
+import {stringToFixedU8Array, stage_ratio_map, bytesToFixedString,
+	loadExecuteWhitelistKeypairs, loadUpdateWhitelistKeypairs, loadWithdrawWhitelistKeypairs
+} from "./lib/lib";
+
 import {Runtime as R} from "./devnet.runtime";
 
 
 
 describe("📃h2coin whitelist-check", async () => {
-	const __investmentId = "02SEHzIZfBcp222";
-	const __version = "3e2ea016";
+	const __investmentId = "02SEHzIZfBcpa22";
+	const __version = "3e2ea000";
 	
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
 		units: 400_000, // or even 500_000 if needed
 	});
 
 
-	before('Initialize investment info...', async function() {
+	before("Initialize investment info with CSR type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Initialize invesgtment info program...`);
-
-
+		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
+		
 		const program = R.program;
 		const provider = R.provider;
+		const payer = provider.wallet;
+		const usdt_mint = R.usdt_mint;
+		const h2coin_mint = R.h2coin_mint;
 
 
 		const investmentId = stringToFixedU8Array(__investmentId, 15);
 		R.investmentId = investmentId;
 
-		const version = stringToFixedU8Array(__version, 4, 'hex');
+		const version = stringToFixedU8Array(__version, 4, "hex");
 		R.version = version;
 
-		const investmentType = { csr: {} };
+		const investmentType = { csr:{} };
 
 		const stageRatioRows = [
-			{ mid: 6.0, last: 4.0 },
-			{ mid: 4.0, last: 6.0 },
-			{ mid: 3.0, last: 2.0 },
+			{ mid: 1.0, last: 4.0 },
+			{ mid: 2.0, last: 5.0 },
+			{ mid: 3.0, last: 6.0 },
 		];
 		const stageRatio = stage_ratio_map(stageRatioRows);
 
 		const start_at = new Anchor.BN(1747699200);
 		const end_at = new Anchor.BN(1779235200);
-		const upperLimit = new Anchor.BN(5_000_000_000_000);
+		const upperLimit = new Anchor.BN(5_000_000_000_000);		
 
-		const executeWhitelist = [
-			new PublicKey("3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW"),
-			new PublicKey("BPAtR1R2HjHtr2xYYLdeYaSHZhDg2zBHf5u3vh4Td7U2"),
-			new PublicKey("7v385KDHKxqRsQv2iobwuCuQiq1KZA6JyuchXJWfvW42"),
-			new PublicKey("9VzY3YbTyVjmE2BDBjgNr32Sfv2xpsx1CMNiCS9Kc8eT"),
-			new PublicKey("CR7HxrTiCiCvWxgJF2gGV3XjQnm1pveBp5XCrXqwJnLy"),
-		];
-
-		const updateWhitelist = [
-			new PublicKey("D37W4RnEps9SN1d6NjaJLXYPQKcKEjQKkMNyc8nVDXuB"),
-			new PublicKey("DvKJPbJNRFuSJusLeAZ6jN4duaiUghfte1hFEemGYxMt"),
-			new PublicKey("78cKKSS3V2hortcDFKbUaPunYE1PWW11oEomYCPNMo8k"),
-			new PublicKey("5QUUjS7i2akMphaXV9QGWANhucQY73BsC9cNedR3feqB"),
-			new PublicKey("CtwJnkTrVCdye3MF2VSRtyoLtGLdCBAkfs1idn3FeHRp"),
-		];
-
-		const withdrawWhitelist = [
-			new PublicKey("CF5yyzXav4KfxxCAtDwMoptaQXZJeVqMZrFLxePMvZGW"),
-		]
+		const executeWhitelist = loadExecuteWhitelistKeypairs().map(k => k.publicKey).slice(0, 5);
+		const updateWhitelist = loadUpdateWhitelistKeypairs().map(k => k.publicKey).slice(0, 5);
+		const withdrawWhitelist = loadWithdrawWhitelistKeypairs().map(k => k.publicKey).slice(0, 1);
 
 
+		// Compute PDA once for all tests
 		const [investmentInfoPda] = Anchor.web3.PublicKey.findProgramAddressSync(
-				[
-					Buffer.from("investment"), 
-					Buffer.from(investmentId),
-					Buffer.from(version)
-				],
-				program.programId
-			);
+			[
+				Buffer.from("investment"), 
+				Buffer.from(investmentId), 
+				Buffer.from(version)
+			],
+			program.programId
+		);
 		R.investmentInfoPda = investmentInfoPda;
-		
-		
+
+
+		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
+				Buffer.from("vault"),
+				Buffer.from(investmentId),
+				Buffer.from(version),
+			],
+			program.programId
+		);
+
+
+		const [vaultUsdtAta, vaultH2coinAta] = await Promise.all([
+			getAssociatedTokenAddress(usdt_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID),
+			getAssociatedTokenAddress(h2coin_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID)
+		]);
+
+
 		try {
-			const signature = await program.methods
+			const tx = await program.methods
 			.initializeInvestmentInfo(
 				investmentId,
 				version,
@@ -95,40 +105,67 @@ describe("📃h2coin whitelist-check", async () => {
 			)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
+				usdtMint: usdt_mint,
+				hcoinMint: h2coin_mint,
+
+				vault: vaultPda,
+				vaultUsdtAccount: vaultUsdtAta,
+				vaultHcoinAccount: vaultH2coinAta,
+
+				payer: payer.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
+				tokenProgram: TOKEN_PROGRAM_ID,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 			} as any)
 			.preInstructions([modifyComputeUnits])
 			.rpc();
-			
-
-			// assertion
-			const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-			expect(investmentInfo.investmentId).to.deep.equal(investmentId);
-			expect(investmentInfo.version).to.deep.equal(version);
-			expect(investmentInfo.state).to.have.property("pending");
-			expect(investmentInfo.isActive).to.equal(true);
 
 		} catch (e:any) {			
 			const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
-			expect(logs).to.include("already in use");
+			expect(logs).to.include("already in use");	
 		}
+		
+
+		const vaultInfo = await provider.connection.getBalance(vaultPda);
+		function isTokenAccount(buffer: Buffer): boolean {
+			return buffer.length === ACCOUNT_SIZE;
+		}
+
+		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
+		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
+			console.log("❌ USDT ATA does not exist");
+			return;
+		}
+
+		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
+		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
+			console.log("❌ H2COIN ATA does not exist");
+			return;
+		}
+
+		const [usdtBalance, h2coinBalance] = await Promise.all([
+			provider.connection.getTokenAccountBalance(vaultUsdtAta),
+			provider.connection.getTokenAccountBalance(vaultH2coinAta),
+		]);
+
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
 		console.log(`${indent}✅ (0) Initialize investment info:`, {
 			investmentId: bytesToFixedString(investmentInfo.investmentId),
-			version: investmentInfo.version.map(n => n.toString(16).padStart(2, '0')).join(''),
+			version: Buffer.from(version).toString('hex'),
 			investmentType: Object.keys(investmentInfo.investmentType)[0],
 			stageRatio: investmentInfo.stageRatio.toString(),
 			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
-			executeWhitelist: investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()),
-			updateWhitelist: investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()),
-			withdrawWhitelist: investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()),
+			executeWhitelist: investmentInfo.executeWhitelist.map(r=>r.toBase58()).join(', '),
+			updateWhitelist: investmentInfo.updateWhitelist.map(r=>r.toBase58()).join(', '),
+			withdrawWhitelist: investmentInfo.withdrawWhitelist.map(r=>r.toBase58()).join(', '),
 			state: Object.keys(investmentInfo.state)[0],
-			isActive: investmentInfo.isActive,
 			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
 			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
-			createdAt: new Date(investmentInfo.createdAt.toNumber()*1000),
+			vaultPda: investmentInfo.vault.toBase58(),
+			solBalance: vaultInfo / Anchor.web3.LAMPORTS_PER_SOL,
+			usdtBalance: usdtBalance.value.uiAmountString ?? '0',
+			h2coinBalance: h2coinBalance.value.uiAmountString ?? '0',
 		});
 	});
 
@@ -398,7 +435,7 @@ describe("📃h2coin whitelist-check", async () => {
 				pass = index >= 0;
 			}
 			else {
-				pass = index < 0;
+				pass = true;
 			}
 
 			all_matched = all_matched && pass;

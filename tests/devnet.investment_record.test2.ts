@@ -7,13 +7,11 @@ import {
 	ComputeBudgetProgram, 
 	PublicKey, Keypair, 
 	AddressLookupTableProgram,
-	TransactionInstruction, 
-	SystemProgram, Transaction,
 } from "@solana/web3.js";
 import { getAssociatedTokenAddress, 
 	ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID,
-	createAssociatedTokenAccountIdempotent,
-	createAssociatedTokenAccount, createAssociatedTokenAccountInstruction 
+	ACCOUNT_SIZE,
+	getAccount
 } from "@solana/spl-token";
 
 import { stringToFixedU8Array, stage_ratio_map, 
@@ -25,16 +23,15 @@ import {Runtime as R} from "./devnet.runtime";
 
 
 
-
 describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcp223";
-	const __version = "3e2ea025";
+	const __investmentId = "02SEHzIZfBcpa22";
+	const __version = "3e2ea002";
 
 
-	const batchId = 1;
+	const batchId = 2;
 	const batchIdBytes = u16ToLEBytes(batchId);
 
 	const yearIndex = 3;
@@ -42,7 +39,7 @@ describe("Investment Record management", async () => {
 	
 		
 	const MAX_ENTRIES_PER_BATCH = 30;
-	const MAX_RECORDS_PER_TX = 5;
+	const MAX_RECORDS_PER_TX = 2;
 	
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
 		units: 800_000,
@@ -51,13 +48,17 @@ describe("Investment Record management", async () => {
 	const threeExecSigners = loadExecuteWhitelistKeypairs().slice(0, 3);
 	const threeUpdateSigners = loadUpdateWhitelistKeypairs().slice(0, 3);
 
-	before("Initialize investment info with CSR type", async function() {
+	before("Initialize investment info with STANDARD type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
+		console.log(`${indent}📃 Initialize invesgtment info with STANDARD type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
+		const payer = provider.wallet;
+		const usdt_mint = R.usdt_mint;
+		const h2coin_mint = R.h2coin_mint;
+
 
 		const investmentId = stringToFixedU8Array(__investmentId, 15);
 		R.investmentId = investmentId;
@@ -74,8 +75,8 @@ describe("Investment Record management", async () => {
 		];
 		const stageRatio = stage_ratio_map(stageRatioRows);
 
-		const start_at = new Anchor.BN(1747699200);
-		const end_at = new Anchor.BN(1779235200);
+		const start_at = new Anchor.BN(1611100800); // January 20, 2021 12:00:00 AM
+		const end_at = new Anchor.BN(1621468800);   // May 20, 2021 12:00:00 AM
 		const upperLimit = new Anchor.BN(5_000_000_000_000);		
 
 		const executeWhitelist = loadExecuteWhitelistKeypairs().map(k => k.publicKey).slice(0, 5);
@@ -95,6 +96,22 @@ describe("Investment Record management", async () => {
 		R.investmentInfoPda = investmentInfoPda;
 
 
+		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
+				Buffer.from("vault"),
+				Buffer.from(investmentId),
+				Buffer.from(version),
+			],
+			program.programId
+		);
+
+
+		const [vaultUsdtAta, vaultH2coinAta] = await Promise.all([
+			getAssociatedTokenAddress(usdt_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID),
+			getAssociatedTokenAddress(h2coin_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID)
+		]);
+
+
 		try {
 			const tx = await program.methods
 			.initializeInvestmentInfo(
@@ -111,27 +128,63 @@ describe("Investment Record management", async () => {
 			)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
+				usdtMint: usdt_mint,
+				hcoinMint: h2coin_mint,
+
+				vault: vaultPda,
+				vaultUsdtAccount: vaultUsdtAta,
+				vaultHcoinAccount: vaultH2coinAta,
+
+				payer: payer.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
+				tokenProgram: TOKEN_PROGRAM_ID,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 			} as any)
 			.preInstructions([modifyComputeUnits])
 			.rpc();
 
-		} catch (e:any) {
+		} catch (e:any) {			
 			const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
 			expect(logs).to.include("already in use");	
 		}
 		
 
+		const vaultInfo = await provider.connection.getBalance(vaultPda);
+		function isTokenAccount(buffer: Buffer): boolean {
+			return buffer.length === ACCOUNT_SIZE;
+		}
+
+		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
+		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
+			console.log("❌ USDT ATA does not exist");
+			return;
+		}
+
+		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
+		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
+			console.log("❌ H2COIN ATA does not exist");
+			return;
+		}
+
+		const [usdtBalance, h2coinBalance] = await Promise.all([
+			provider.connection.getTokenAccountBalance(vaultUsdtAta),
+			provider.connection.getTokenAccountBalance(vaultH2coinAta),
+		]);
+
+
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
 		console.log(`${indent}✅ (0) Initialize investment info:`, {
 			investmentId: bytesToFixedString(investmentInfo.investmentId),
-			version: investmentInfo.version.map(n => n.toString(16).padStart(2, '0')).join(''),
+			version: Buffer.from(version).toString('hex'),
 			investmentType: Object.keys(investmentInfo.investmentType)[0],
 			stageRatio: investmentInfo.stageRatio.toString(),
 			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
 			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
 			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
+			vaultPda: investmentInfo.vault.toBase58(),
+			solBalance: vaultInfo / Anchor.web3.LAMPORTS_PER_SOL,
+			usdtBalance: usdtBalance.value.uiAmountString ?? '0',
+			h2coinBalance: h2coinBalance.value.uiAmountString ?? '0',
 		});
 	});
 
@@ -147,6 +200,9 @@ describe("Investment Record management", async () => {
 		const investmentInfoPda = R.investmentInfoPda;
 		const investmentRecordPdas:PublicKey[] = [];
 		const version = R.version;	
+		const payer = provider.wallet;
+		const usdt_mint = R.usdt_mint;
+		const h2coin_mint = R.h2coin_mint;
 
 
 		const record_list = await program.account.investmentRecord.all([
@@ -179,25 +235,19 @@ describe("Investment Record management", async () => {
 
 		
 		let total_invest_usdt = 0;
-		const record_info:PublicKey[] = [];
-
+		let currentRecordId = 31;
 
 		for (let start = 1; start <= MAX_ENTRIES_PER_BATCH; start += MAX_RECORDS_PER_TX) {
 			let tx = new Anchor.web3.Transaction();
 
 			for (let offset = 0; offset < MAX_RECORDS_PER_TX && (start + offset) <= MAX_ENTRIES_PER_BATCH; offset++) {
-				const index = start*100 + offset;
+				const index = start*30 + offset;
 
 				// Generate investment record
-				const recordId = new Anchor.BN(index);
-				const accountId = offset === 4? fix_account_id: TrimId.shortid();
+				const recordId = new Anchor.BN(currentRecordId);
+				const accountId = index % 11 === 0? fix_account_id: TrimId.shortid();
 				const accountIdBytes = stringToFixedU8Array(accountId, 15);
-				let wallet = offset === 4? fix_wallet: Keypair.generate().publicKey;
-				const result = isValidSolanaWalletAddress(wallet);
-				if (result === false) {
-					wallet = offset === 4? fix_wallet: Keypair.generate().publicKey;
-				}
-
+				const wallet = index % 11 === 0? fix_wallet: Keypair.generate().publicKey;
 				const options = [1, 5, 10];
 				const basicUsdt = 1000 * 10 ** 6;
 				const exchangeRatio = 1.05;
@@ -208,24 +258,28 @@ describe("Investment Record management", async () => {
 				const [recordPda] = Anchor.web3.PublicKey.findProgramAddressSync(
 					[
 						Buffer.from("record"),
-						Buffer.from(investmentId),                    	// 15 bytes
-						Buffer.from(version),							// 4 bytes
+						Buffer.from(investmentId),
+						Buffer.from(version),
 						batchIdBytes,
-						recordId.toArrayLike(Buffer, "le", 8),        // 8 bytes 
+						recordId.toArrayLike(Buffer, "le", 8),
 						Buffer.from(accountIdBytes)
 					],
 					program.programId
 				);
 				investmentRecordPdas.push(recordPda);
 
-				console.log('recordId', index, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt);
+				console.log(`${indent}recordId`, currentRecordId, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt, 'recordPda:', recordPda.toBase58());
 
+				const [RecipientUsdtAta, RecipientHcoinAta] = await Promise.all([
+					getAssociatedTokenAddress(usdt_mint, wallet),
+					getAssociatedTokenAddress(h2coin_mint, wallet)
+				]);
+				
 				const ix = await program.methods
 					.addInvestmentRecord(
 						batchId,
 						recordId,
 						accountIdBytes,
-						wallet,
 						new Anchor.BN(amountUsdt),
 						new Anchor.BN(amountHcoin),
 						1
@@ -233,8 +287,18 @@ describe("Investment Record management", async () => {
 					.accounts({
 						investmentInfo: investmentInfoPda,
 						investmentRecord: recordPda,
-						payer: provider.wallet.publicKey,
+
+						usdtMint: usdt_mint,
+						hcoinMint: h2coin_mint,
+
+						recipientAccount: wallet,
+						recipientUsdtAccount: RecipientUsdtAta,
+						recipientHcoinAccount: RecipientHcoinAta,
+
+						payer: payer.publicKey,
 						systemProgram: Anchor.web3.SystemProgram.programId,
+						tokenProgram: TOKEN_PROGRAM_ID,
+						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 					} as any)
 					.remainingAccounts(
 						threeUpdateSigners.map(kp => ({
@@ -246,7 +310,7 @@ describe("Investment Record management", async () => {
 					.instruction();
 
 				tx.add(ix);
-				record_info.push(recordPda);
+				currentRecordId++;
 			} // end for offset
 
 			try {
@@ -255,40 +319,16 @@ describe("Investment Record management", async () => {
 					commitment: "confirmed",
 					skipPreflight: false,
 				});
-				console.log(`${indent}✅ Sent batch: ${start}~${Math.min(start + MAX_RECORDS_PER_TX - 1, MAX_RECORDS_PER_TX)} (tx: ${sig})`);
+				console.log(`${indent}✅ Sent records: ${currentRecordId-2}~${currentRecordId-1} (tx: ${sig})`);
 
 
 				await new Promise(resolve => setTimeout(resolve, 1000));
 
-
-				// Create ALT with investment records
-				if (record_info.length === MAX_ENTRIES_PER_BATCH) {
-					const tx_alt = new Anchor.web3.Transaction();
-					const recentSlot = await provider.connection.getSlot("finalized");
-					const [createIx, lookupTableAddress] = AddressLookupTableProgram.createLookupTable({
-						authority: provider.wallet.publicKey,
-						payer: provider.wallet.publicKey,
-						recentSlot,
-					});
-
-					const extendIx = AddressLookupTableProgram.extendLookupTable({
-						lookupTable: lookupTableAddress,
-						authority: provider.wallet.publicKey,
-						payer: provider.wallet.publicKey,
-						addresses: record_info,
-					});
-
-					tx_alt.add(createIx, extendIx);
-					const sig = await provider.sendAndConfirm(tx_alt, []);
-					console.log(`${indent}✅ Created ALT for batchId=${batchId}: ${lookupTableAddress.toBase58()}`);
-					R.lookupTableMap.get('record')!.set(batchId, lookupTableAddress);
-
-					record_info.length = 0;
-				} // end if record_info.length
-
 			} catch (e: any) {
-				console.error(`${indent}❌ Batch send failed:`, e.logs ?? e.message);
-				throw e;
+				console.log(e);
+				
+				const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
+				expect(logs).to.include("InvestmentInfoHasCompleted");
 			}
 		}
 
@@ -353,15 +393,22 @@ describe("Investment Record management", async () => {
 		const program = R.program;
 		const provider = R.provider;
 		const investmentId = R.investmentId;
-		const version = R.version;	
 		const investmentInfoPda = R.investmentInfoPda;
 		const investmentRecordPdas:PublicKey[] = [];
+		const version = R.version;	
+		const payer = provider.wallet;
+		const usdt_mint = R.usdt_mint;
+		const h2coin_mint = R.h2coin_mint;
 
 
 		const __account_id = '02SEUFT8wuOZ2w5';
 		const fix_account_id = stringToFixedU8Array(__account_id, 15);
-		const old_fix_wallet = new PublicKey('3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW');
-		const new_fix_wallet = new PublicKey('D37W4RnEps9SN1d6NjaJLXYPQKcKEjQKkMNyc8nVDXuB');
+		const old_wallet = new PublicKey('3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW');
+		const new_wallet = new PublicKey('D37W4RnEps9SN1d6NjaJLXYPQKcKEjQKkMNyc8nVDXuB');
+		const [RecipientUsdtAta, RecipientHcoinAta] = await Promise.all([
+			getAssociatedTokenAddress(usdt_mint, new_wallet),
+			getAssociatedTokenAddress(h2coin_mint, new_wallet)
+		]);
 
 
 		const before_record_list = await program.account.investmentRecord.all([
@@ -387,7 +434,7 @@ describe("Investment Record management", async () => {
 
 		console.log(`${indent}✅`,
 			'before_record_list',
-			before_record_list.map(i => ({
+			before_record_list.map((i:any) => ({
 				recordId: i.account.recordId.toNumber(),
 				accountId: bytesToFixedString(i.account.accountId),
 				wellet: i.account.wallet.toBase58()
@@ -413,14 +460,20 @@ describe("Investment Record management", async () => {
 		// ✅ 驗證
 		try {
 			const ix = await program.methods
-			.updateInvestmentRecordWallets(
-				fix_account_id,
-				new_fix_wallet
-			)
+			.updateInvestmentRecordWallets(fix_account_id)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
+				usdtMint: usdt_mint,
+				hcoinMint: h2coin_mint,
+
+				recipientAccount: new_wallet,
+				recipientUsdtAccount: RecipientUsdtAta,
+				recipientHcoinAccount: RecipientHcoinAta,
+
+				payer: payer.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
+				tokenProgram: TOKEN_PROGRAM_ID,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 			} as any)
 			.remainingAccounts([
 				...threeUpdateSigners.map(kp => ({
@@ -468,7 +521,7 @@ describe("Investment Record management", async () => {
 
 			console.log(`${indent}✅`,
 				'after_record_list',
-				after_record_list.map(i => ({
+				after_record_list.map((i:any) => ({
 					recordId: i.account.recordId.toNumber(),
 					accountId: bytesToFixedString(i.account.accountId),
 					wellet: i.account.wallet.toBase58()
@@ -627,24 +680,33 @@ describe("Investment Record management", async () => {
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Update investment record wallet again program ...`);
 
+
 		const program = R.program;
 		const provider = R.provider;
 		const investmentId = R.investmentId;
 		const investmentInfoPda = R.investmentInfoPda;
 		const investmentRecordPdas:PublicKey[] = [];
 		const version = R.version;	
+		const payer = provider.wallet;
+		const usdt_mint = R.usdt_mint;
+		const h2coin_mint = R.h2coin_mint;
 
 
 		const __account_id = '02SEUFT8wuOZ2w5';
 		const fix_account_id = stringToFixedU8Array(__account_id, 15);
-		const new_fix_wallet = new PublicKey('DKKntVkQgWxcT1ujwEPfQ8Gg8Zk6tBrA6cZLCYpdXqhf');
+		const old_wallet = new PublicKey('3A1krgYtfgYecXaqwZNQaxgiEaq7Yt1v3wdeZtvQPidW');
+		const new_wallet = new PublicKey('D37W4RnEps9SN1d6NjaJLXYPQKcKEjQKkMNyc8nVDXuB');
+		const [RecipientUsdtAta, RecipientHcoinAta] = await Promise.all([
+			getAssociatedTokenAddress(usdt_mint, new_wallet),
+			getAssociatedTokenAddress(h2coin_mint, new_wallet)
+		]);
 
 
 		const before_record_list = await program.account.investmentRecord.all([
 			{
 				memcmp: {
 					offset: 18, // account_id
-					bytes: bs58.encode(Array.from(batchIdBytes)),
+					bytes: bs58.encode(Buffer.from(fix_account_id)),
 				},
 			},
 			{
@@ -661,13 +723,12 @@ describe("Investment Record management", async () => {
 			},
 		]);
 
-
-		console.log(`${indent}`,
+		console.log(`${indent}✅`,
 			'before_record_list',
-			before_record_list.map(i => ({
-				recordId: i.account.recordId,
-				accountId: i.account.accountId,
-				wellet: i.account.wallet
+			before_record_list.map((i:any) => ({
+				recordId: i.account.recordId.toNumber(),
+				accountId: bytesToFixedString(i.account.accountId),
+				wellet: i.account.wallet.toBase58()
 			}))
 		);
 
@@ -689,15 +750,21 @@ describe("Investment Record management", async () => {
 
 		// ✅ 驗證
 		try {
-			const tx = await program.methods
-			.updateInvestmentRecordWallets(
-				fix_account_id,
-				new_fix_wallet
-			)
+			const ix = await program.methods
+			.updateInvestmentRecordWallets(fix_account_id)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
+				usdtMint: usdt_mint,
+				hcoinMint: h2coin_mint,
+
+				recipientAccount: new_wallet,
+				recipientUsdtAccount: RecipientUsdtAta,
+				recipientHcoinAccount: RecipientHcoinAta,
+
+				payer: payer.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
+				tokenProgram: TOKEN_PROGRAM_ID,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 			} as any)
 			.remainingAccounts([
 				...threeUpdateSigners.map(kp => ({
@@ -711,49 +778,49 @@ describe("Investment Record management", async () => {
 					isSigner: false,
 				}))
 			])
-			.signers(threeUpdateSigners)
 			.preInstructions([modifyComputeUnits])
-			.rpc();
+			.instruction();
 
-			
-		} catch (e:any) {
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
-				"NoRecordsUpdated",
-				"InvestmentInfoDeactivated"
+			const tx = new Anchor.web3.Transaction().add(ix);
+			const sig = await provider.sendAndConfirm(tx, [...threeUpdateSigners]);
+			console.log(`${indent}✅ Wallets updated (tx: ${sig})`);
+
+			// delay 1 second
+			await new Promise(resolve => setTimeout(resolve, 1000));
+
+			const after_record_list = await program.account.investmentRecord.all([
+				{
+					memcmp: {
+						offset: 18, // account_id
+						bytes: bs58.encode(Buffer.from(fix_account_id)),
+					},
+				},
+				{
+					memcmp: {
+						offset: 33, // investment_id
+						bytes: bs58.encode(Buffer.from(investmentId)),
+					},
+				},
+				{
+					memcmp: {
+						offset: 33 + 15, // version
+						bytes: bs58.encode(Buffer.from(version)),
+					},
+				},
 			]);
+
+
+			console.log(`${indent}✅`,
+				'after_record_list',
+				after_record_list.map((i:any) => ({
+					recordId: i.account.recordId.toNumber(),
+					accountId: bytesToFixedString(i.account.accountId),
+					wellet: i.account.wallet.toBase58()
+				}))
+			);
+		} catch (e:any) {
+			expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
 		}
-
-		const after_record_list = await program.account.investmentRecord.all([
-			{
-				memcmp: {
-					offset: 18, // account_id
-					bytes: bs58.encode(Array.from(batchIdBytes)),
-				},
-			},
-			{
-				memcmp: {
-					offset: 33, // investment_id
-					bytes: bs58.encode(Buffer.from(investmentId)),
-				},
-			},
-			{
-				memcmp: {
-					offset: 33 + 15, // version
-					bytes: bs58.encode(Buffer.from(version)),
-				},
-			},
-		]);
-
-
-		console.log(`${indent}`,
-			'after_record_list',
-			after_record_list.map(i => ({
-				recordId: i.account.recordId,
-				accountId: i.account.accountId,
-				wellet: i.account.wallet
-			}))
-		);
 	});
 
 	it("(5) Create ALT from investment records", async function () {
@@ -788,7 +855,8 @@ describe("Investment Record management", async () => {
 				},
 			},
 		]);
-
+		console.log(`${indent}✅ Found ${record_list.length} investment records for batchId=${batchId}`);
+		record_list.sort((a, b) => a.account.recordId.toNumber() - b.account.recordId.toNumber());
 
 		const tx_alt = new Anchor.web3.Transaction();
 		const recentSlot = await provider.connection.getSlot("finalized");
@@ -802,12 +870,26 @@ describe("Investment Record management", async () => {
 			lookupTable: lookupTableAddress,
 			authority: provider.wallet.publicKey,
 			payer: provider.wallet.publicKey,
-			addresses: record_list.map(i => i.publicKey),
+			addresses: record_list.map((i:any) => i.publicKey),
 		});
 
 		tx_alt.add(createIx, extendIx);
 		const sig = await provider.sendAndConfirm(tx_alt, []);
 		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}`);
+		await new Promise(resolve => setTimeout(resolve, 1500));
+
+		let retries = 0;
+		let lookupTableAccount;
+		while (!lookupTableAccount && retries < 5) {
+			const result = await provider.connection.getAddressLookupTable(lookupTableAddress);
+			if (result.value) {
+				lookupTableAccount = result.value;
+				break;
+			}
+			await new Promise(res => setTimeout(res, 1000));
+			retries++;
+		}
+		if (!lookupTableAccount) throw new Error("ALT did not become available in time");
 
 		// Store the lookup table address in the map
 		R.lookupTableMap.get('record')!.set(batchId, lookupTableAddress);
@@ -828,6 +910,7 @@ describe("Investment Record management", async () => {
 		const payer = provider.wallet.publicKey;
 		const totalProfitUsdt = new Anchor.BN(5_000_000_000_000);
 		const lookupTableAddress = R.lookupTableMap.get('record')!.get(batchId);
+		console.log(`${indent}📃 Lookup Table Address: ${lookupTableAddress?.toBase58()}`);
 		
 
 		// Find the PDA for the profit share cache
@@ -877,7 +960,7 @@ describe("Investment Record management", async () => {
 		let errorCaught = false;
 		try {
 			const estimateIx = await program.methods
-			.estimateProfitShare(1, totalProfitUsdt, totalInvestUsdt)
+			.estimateProfitShare(batchId, totalProfitUsdt, totalInvestUsdt)
 			.accounts({
 				investmentInfo: investmentInfoPda,
 				mint: usdt_mint,
@@ -960,8 +1043,9 @@ describe("Investment Record management", async () => {
 			expect(errorCaught).to.be.false;
 		} catch (e:any) {			
 			errorCaught = true;
+			console.log(e);
 			expect(errorCaught).to.be.true;
-			expect(e.transactionLogs.join('\n')).to.include("MustStandard");
+			expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
 		}
 	});
 	it("(7) Estimate refund share using ALT with standard type", async function () {
@@ -1112,123 +1196,10 @@ describe("Investment Record management", async () => {
 		}
 	});
 
-	it("(8) Check if ATA of record wallets exist or not", async function () {
-		this.timeout(1000 * 60 * 5);
-		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Check if ATA of record wallets exist or not program...`);
-
-		const program = R.program;
-		const provider = R.provider;
-		const investmentId = R.investmentId;
-		const version = R.version;
-		const usdtMint = R.usdt_mint;
-		const h2coinMint = R.h2coin_mint;
-		const payer = provider.wallet.publicKey;
-		const instructions: TransactionInstruction[] = [];
-
-
-		// ✅ 處理 profit share cache
-		{
-			const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
-				[
-					Buffer.from("profit_cache"),
-					Buffer.from(investmentId),
-					Buffer.from(version),
-					batchIdBytes,
-				],
-				program.programId
-			);
-			const cache = await program.account.profitShareCache.fetch(cachePda);
-
-			for (const entry of cache.entries) {
-				const recipient = new PublicKey(entry.wallet);
-
-				const recipientAta = await getAssociatedTokenAddress(
-					usdtMint,
-					recipient,
-					false,
-					TOKEN_PROGRAM_ID,
-					ASSOCIATED_TOKEN_PROGRAM_ID
-				);
-
-				const accountInfo = await provider.connection.getAccountInfo(recipientAta);
-				if (accountInfo === null) {
-					const ix = createAssociatedTokenAccountInstruction(
-						payer,
-						recipientAta,
-						recipient,
-						usdtMint,
-						TOKEN_PROGRAM_ID,
-						ASSOCIATED_TOKEN_PROGRAM_ID
-					);
-					instructions.push(ix);
-
-					console.log(`${indent}✅ Created ATA for recipient: ${recipient.toBase58()} (${recipientAta.toBase58()}) `);
-				}
-			}
-		}
-
-		// ✅ 處理 refund share cache
-		{
-			const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
-				[
-					Buffer.from("refund_cache"),
-					Buffer.from(investmentId),
-					Buffer.from(version),
-					batchIdBytes,
-					yearIndexBytes
-				],
-				program.programId
-			);
-			const cache = await program.account.refundShareCache.fetch(cachePda);
-
-			for (const entry of cache.entries) {
-				const recipient = new PublicKey(entry.wallet);
-			
-				const recipientAta = await getAssociatedTokenAddress(
-					h2coinMint,
-					recipient,
-					false,
-					TOKEN_PROGRAM_ID,
-					ASSOCIATED_TOKEN_PROGRAM_ID
-				);
-
-				const accountInfo = await provider.connection.getAccountInfo(recipientAta);
-				
-				if (accountInfo === null) {
-					const ix = createAssociatedTokenAccountInstruction(
-						payer,
-						recipientAta,
-						recipient,
-						h2coinMint,
-						TOKEN_PROGRAM_ID,
-						ASSOCIATED_TOKEN_PROGRAM_ID
-					);					
-					instructions.push(ix);
-				}
-			}
-		}
-
-		// ✅ 發送 batch 交易
-		if (instructions.length > 0) {
-			const MAX_PER_TX = 10;
-			const txCount = Math.ceil(instructions.length / MAX_PER_TX);
-
-			for (let i = 0; i < txCount; i++) {
-				const chunk = instructions.slice(i * MAX_PER_TX, (i + 1) * MAX_PER_TX);
-				const tx = new Transaction().add(...chunk);
-				const signature = await provider.sendAndConfirm(tx);
-				console.log(`${indent}✅ Batch ${i + 1}/${txCount} ATA created: ${signature}`);
-			}
-		} else {
-			console.log(`${indent}✅ All recipient ATAs already exist`);
-		}
-	});
-
 	it("(9) Create ALT from Profit Share Cache entries", async function () {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
+		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Create ALT from Profit Share Cache entries program...`);
+		console.log(`${indent}📃 Create ALT from ProfitShareCache entries prgram...`);
 
 
 		const program = R.program;
@@ -1237,6 +1208,8 @@ describe("Investment Record management", async () => {
 		const version = R.version;
 		const usdtMint = R.usdt_mint;
 
+	
+		const batchIdBytes = u16ToLEBytes(batchId)
 
 		const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
 			[
@@ -1250,29 +1223,17 @@ describe("Investment Record management", async () => {
 
 		const cache = await program.account.profitShareCache.fetch(cachePda);
 
+
+
+		// Construct list of ATA pubkeys
+		const addressATAs:PublicKey[] = [];
 		for (const entry of cache.entries) {
-			const recipient = new Anchor.web3.PublicKey(entry.wallet);
-			// const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient, false);
-			const recipientAta = await getAssociatedTokenAddress(
-				usdtMint,
-				recipient,
-				false,
-				TOKEN_PROGRAM_ID,
-				ASSOCIATED_TOKEN_PROGRAM_ID
-			);
+			const recipient = entry.wallet;
+			const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient);
 
-			const expected = recipientAta.toBase58();
-			const actual = new Anchor.web3.PublicKey(entry.recipientAta).toBase58();
-			if (actual !== expected) {
-				console.error("🎯 Found! Recipient wallet:", entry.wallet.toBase58(), 'associated ATA was not matched!!');
-			}
-
-			const accountInfo = await provider.connection.getAccountInfo(recipientAta);
-			if (accountInfo === null) {
-				console.error("🎯 Found! Recipient wallet:", entry.wallet.toBase58(), 'has not been assocaited!!');
-			}
+			addressATAs.push(recipientAta);
 		}
-		const entryATAs = cache.entries.map(entry => entry.recipientAta);
+
 
 		const recentSlot = await provider.connection.getSlot("finalized");
 
@@ -1286,24 +1247,25 @@ describe("Investment Record management", async () => {
 			lookupTable: lookupTableAddress,
 			authority: provider.wallet.publicKey,
 			payer: provider.wallet.publicKey,
-			addresses: entryATAs,
+			addresses: addressATAs,
 		});
 
+		const tx = new Anchor.web3.Transaction().add(createIx, extendIx);
 		const signature = await Anchor.web3.sendAndConfirmTransaction(
 			provider.connection,
-			new Anchor.web3.Transaction().add(createIx, extendIx),
-			[provider.wallet.payer!]
+			tx,
+			[provider.wallet.payer!],
+			{ commitment: "confirmed" }
 		);
 
-		
-		await new Promise(resolve => setTimeout(resolve, 1000));
 		R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-		console.log(`${indent}✅ Created ALT for Porfit at:`, lookupTableAddress.toBase58());
+		console.log(`✅ Cache ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}`);
+		await new Promise(resolve => setTimeout(resolve, 1000)); // optional delay
+		
 	});
-/*
+
 	it("(10) Deposit sol, USDT and H2coin into vaultPDA", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
-		if (is_record_add === true) return;
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Deposit sol, USDT and H2coin into vaultPDA program...`);
 
@@ -1392,17 +1354,17 @@ describe("Investment Record management", async () => {
 				.instruction();
 
 
-			const userUsdtAta = await getAssociatedTokenAddress(usdtMint, payer);
+			const fromUsdtAta = await getAssociatedTokenAddress(usdtMint, payer);
 			const vaultUsdtAta = await getAssociatedTokenAddress(usdtMint, vaultPda, true);
 			const ix2 = await program.methods
 				.depositTokenToVault(subtotalProfitUsdt)
 				.accounts({
 					investmentInfo: investmentInfoPda,
-					payer,
-					from: userUsdtAta,
 					mint: usdtMint,
+					from: fromUsdtAta,
 					vault: vaultPda,
 					vaultTokenAccount: vaultUsdtAta,
+					payer,
 					tokenProgram: TOKEN_PROGRAM_ID,
 					systemProgram: Anchor.web3.SystemProgram.programId,
 					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -1411,17 +1373,17 @@ describe("Investment Record management", async () => {
 				.instruction();
 
 
-			const userHcoinAta = await getAssociatedTokenAddress(h2coinMint, payer);
+			const fromHcoinAta = await getAssociatedTokenAddress(h2coinMint, payer);
 			const vaultHcoinAta = await getAssociatedTokenAddress(h2coinMint, vaultPda, true);
 			const ix3 = await program.methods
 				.depositTokenToVault(subtotalRefundHcoin)
 				.accounts({
 					investmentInfo: investmentInfoPda,
-					payer,
-					from: userHcoinAta,
 					mint: h2coinMint,
+					from: fromHcoinAta,
 					vault: vaultPda,
 					vaultTokenAccount: vaultHcoinAta,
+					payer,
 					tokenProgram: TOKEN_PROGRAM_ID,
 					systemProgram: Anchor.web3.SystemProgram.programId,
 					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -1445,14 +1407,14 @@ describe("Investment Record management", async () => {
 
 			const UsdtATA = await provider.connection.getTokenAccountBalance(vaultUsdtAta);
 			const usdtBalance = UsdtATA.value.uiAmountString ?? '0';
-			console.log(`${indent}💰 Token Balance:`, usdtBalance, "USDT", vaultUsdtAta.toBase58());
+			console.log(`${indent}💰 USDT Balance:`, usdtBalance, "USDT", vaultUsdtAta.toBase58());
 
 			// delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
 
 			const H2coinATA = await provider.connection.getTokenAccountBalance(vaultUsdtAta);
 			const H2coinBalance = H2coinATA.value.uiAmountString ?? '0';
-			console.log(`💰 Token Balance:`, H2coinBalance, "H2coin", vaultUsdtAta.toBase58());
+			console.log(`${indent}💰 H2coin Balance:`, H2coinBalance, "H2coin", vaultUsdtAta.toBase58());
 			
 			// delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1510,7 +1472,7 @@ describe("Investment Record management", async () => {
 
 		const lookupTableAccount = await provider.connection
 		.getAddressLookupTable(lookupTableAddress!)
-		.then(res => res.value!);
+		.then((res:any) => res.value!);
 
 		for (const key of lookupTableAccount.state.addresses) {
 			if (key.toBase58() === "8ftoK2iy8Njk9MkgACEJJVenwdycFUW82uk6SVUk1xK3") {
@@ -1525,11 +1487,11 @@ describe("Investment Record management", async () => {
 				.executeProfitShare(batchId)
 				.accounts({
 					investmentInfo: investmentInfoPda,
-					cache: cachePda,
-					payer,
-					vault: vaultPda,
 					mint: usdtMint,
+					cache: cachePda,
+					vault: vaultPda,
 					vaultTokenAccount: vaultTokenAta,
+					payer,
 					tokenProgram: TOKEN_PROGRAM_ID,
 					systemProgram: Anchor.web3.SystemProgram.programId,
 					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -1578,11 +1540,10 @@ describe("Investment Record management", async () => {
 			expect(e.logs.join("\n")).to.include("Insufficient USDT token balance in vault");
 		}
 	});
-
 	it("(12) Create ALT from Refund Share Cache entries", async function () {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
+		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Create ALT from Refund Share Cache entries program...`);
+		console.log(`${indent}📃 Create ALT from Refund Share Cache entries prgram...`);
 
 
 		const program = R.program;
@@ -1602,45 +1563,74 @@ describe("Investment Record management", async () => {
 			],
 			program.programId
 		);
-
 		const cache = await program.account.refundShareCache.fetch(cachePda);
+		console.log('cache', cache.entries.length);
+		
 
-		for (const entry of cache.entries) {			
-			const recipient = new Anchor.web3.PublicKey(entry.wallet);
-			const recipientAta = await getAssociatedTokenAddress(h2coinMint, recipient);
-			const expected = recipientAta.toBase58();
-			const actual = new Anchor.web3.PublicKey(entry.recipientAta).toBase58();
 
-			if (actual !== expected) {
-				console.error("🎯 Found! Recipient wallet:", entry.wallet.toBase58(), 'associated ATA was not matched!!');
-			}
+		// Construct list of ATA pubkeys
+		const addressATAs:PublicKey[] = [];
+		for (const entry of cache.entries) {
+			const recipient = entry.wallet;
+			const recipientAta = await getAssociatedTokenAddress(h2coinMint, recipient, false, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+
+			addressATAs.push(recipientAta);
 		}
-		const entryATAs = cache.entries.map(entry => entry.recipientAta);
-		const recentSlot = await provider.connection.getSlot("finalized");
 
+
+		const tx_alt = new Anchor.web3.Transaction();
+		const recentSlot = await provider.connection.getSlot("finalized");
 
 		const [createIx, lookupTableAddress] = AddressLookupTableProgram.createLookupTable({
 			authority: provider.wallet.publicKey,
 			payer: provider.wallet.publicKey,
 			recentSlot,
 		});
+		
+		await provider.sendAndConfirm(tx_alt.add(createIx));
+		const signature = await provider.sendAndConfirm(tx_alt, []);
+		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature=${signature}`);
 
-		const extendIx = AddressLookupTableProgram.extendLookupTable({
-			lookupTable: lookupTableAddress,
-			authority: provider.wallet.publicKey,
-			payer: provider.wallet.publicKey,
-			addresses: entryATAs,
-		});
 
-		const signature = await Anchor.web3.sendAndConfirmTransaction(
-			provider.connection,
-			new Anchor.web3.Transaction().add(createIx, extendIx),
-			[provider.wallet.payer!]
-		);
+		const BATCH_SIZE = 20; // 根據測試可調整為 20~30
+		for (let i = 0; i < addressATAs.length; i += BATCH_SIZE) {
+			const chunk = addressATAs.slice(i, i + BATCH_SIZE);
 
-		await new Promise(resolve => setTimeout(resolve, 1000));
+			const extendIx = AddressLookupTableProgram.extendLookupTable({
+				lookupTable: lookupTableAddress,
+				authority: provider.wallet.publicKey,
+				payer: provider.wallet.publicKey,
+				addresses: chunk,
+			});
+
+			const signature = await Anchor.web3.sendAndConfirmTransaction(
+				provider.connection,
+				new Anchor.web3.Transaction().add(extendIx),
+				[provider.wallet.payer!]
+			);
+
+			console.log(`${indent}✅ Extended ALT with ${chunk.length} addresses, signature=${signature}`);
+		}
+
+		
+		await new Promise(resolve => setTimeout(resolve, 1500));
+
+		let retries = 0;
+		let lookupTableAccount;
+		while (!lookupTableAccount && retries < 5) {
+			const result = await provider.connection.getAddressLookupTable(lookupTableAddress);
+			if (result.value) {
+				lookupTableAccount = result.value;
+				break;
+			}
+			await new Promise(res => setTimeout(res, 1000));
+			retries++;
+		}
+		if (!lookupTableAccount) throw new Error("ALT did not become available in time");
+
+		// Store the lookup table address in the map
 		R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-		console.log(`${indent}✅ Created ALT for Refund at:`, lookupTableAddress.toBase58());
+		
 	});
 
 	it("(13) Execute Refund Share using ALT", async function () {
@@ -1695,18 +1685,18 @@ describe("Investment Record management", async () => {
 
 			const lookupTableAccount = await provider.connection
 			.getAddressLookupTable(lookupTableAddress!)
-			.then(res => res.value!);
+			.then((res:any) => res.value!);
 
 
 			const execIx = await program.methods
 				.executeRefundShare(batchId, yearIndex)
 				.accounts({
 					investmentInfo: investmentInfoPda,
-					cache: cachePda,
-					payer,
-					vault: vaultPda,
 					mint: h2coin_mint,
+					cache: cachePda,
+					vault: vaultPda,
 					vaultTokenAccount: vaultTokenAta,
+					payer,
 					tokenProgram: TOKEN_PROGRAM_ID,
 					systemProgram: Anchor.web3.SystemProgram.programId,
 					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -1754,9 +1744,8 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(14) Withdraw from vaultPDA balance to withdraw wallet", async function () {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Process Withdraw from vaultPDA balance to withdraw wallet program...`);
+		console.log(`${indent}📃 Process Withdraw from vault balance to withdraw wallet program...`);
 
 	
 		const program = R.program;
@@ -1774,24 +1763,6 @@ describe("Investment Record management", async () => {
 		const instructions = [];
 		
 
-		try {
-			const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
-				[
-					Buffer.from("profit_cache"),
-					Buffer.from(investmentId),
-					Buffer.from(version),
-					batchIdBytes,
-				],
-				program.programId
-			);
-
-			const cache = await program.account.profitShareCache.fetch(cachePda);
-			console.log(`${indent}✅ cache subtotalEstimateSol:`, cache.subtotalEstimateSol.toString());
-			console.log(`${indent}✅ cache subtotalProfitUsdt:`, cache.subtotalProfitUsdt.toString());
-		} catch (e) {
-			console.warn(`${indent}⚠️ Cache missing for batchId=${batchId}, skipping...`);
-		}
-
 
 
 		const [vaultPda, vaultBump] = Anchor.web3.PublicKey.findProgramAddressSync(
@@ -1808,82 +1779,54 @@ describe("Investment Record management", async () => {
 
 
 		// Vault USDT token accounts
-		const vaultUsdtAta = await getAssociatedTokenAddress(usdt_mint, vaultPda, true);
+		const vaultUsdtAta = await getAssociatedTokenAddress(usdt_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
 		try {
 			const vaultUsdtAtaInfo = await getAccount(provider.connection as any, vaultUsdtAta);
 			const vaultUSDTBalance = Number(vaultUsdtAtaInfo.amount) / 1_000_000;
 			console.log(`${indent} Vault USDT balance:`, vaultUSDTBalance, "USDT with ATA:", vaultUsdtAta.toBase58());
 		} catch (e) {
 			console.log(`${indent} Vault USDT balance: 0 USDT (ATA not found)`);
-			const ataIx = createAssociatedTokenAccountInstruction(
-				payer.publicKey, 		// payer
-				vaultUsdtAta,       	// vault ATA address
-				vaultPda,               // vault PDA
-				usdt_mint               // mint
-			);
-			instructions.push(ataIx);
 		}
 		
 		// Vault H2coin token accounts
-		const vaultH2coinAta = await getAssociatedTokenAddress(h2coin_mint, vaultPda, true);
+		const vaultH2coinAta = await getAssociatedTokenAddress(h2coin_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
 		try {
 			const vaultH2coinAtaInfo = await getAccount(provider.connection as any, vaultH2coinAta);
 			const vaultH2coinBalance = Number(vaultH2coinAtaInfo.amount) / 1_000_000;
 			console.log(`${indent} Vault H2COIN balance:`, vaultH2coinBalance, "H2COIN with ATA:", vaultH2coinAta.toBase58());
 		} catch (e) {
 			console.log(`${indent} Vault H2COIN balance: 0 H2COIN (ATA not found)`);
-			const ataIx = createAssociatedTokenAccountInstruction(
-				payer.publicKey, 		// payer
-				vaultH2coinAta,      	// vault ATA address
-				vaultPda,               // vault PDA
-				h2coin_mint             // mint
-			);
-			instructions.push(ataIx);
 		}
 
 
 
 		// Destination USDT token accounts (ATA) for recipient
 		const RecipientUsdtAta = await getAssociatedTokenAddress(usdt_mint, recipient);
-		try {
-			await getAccount(provider.connection as any, RecipientUsdtAta);
-		} catch (error) {
-			const ataIx = createAssociatedTokenAccountInstruction(
-				payer.publicKey, 		// payer
-				RecipientUsdtAta,       // Recipient ATA address
-				recipient,              // Recipient PDA
-				usdt_mint               // mint
-			);
-			instructions.push(ataIx);
-		}
-
 
 		// Destination H2coin token accounts (ATA) for recipient
 		const RecipientHcoinAta = await getAssociatedTokenAddress(h2coin_mint, recipient);
-		try {
-			await getAccount(provider.connection as any, RecipientHcoinAta);			
-		} catch (error) {		
-			const ataIx = createAssociatedTokenAccountInstruction(
-				payer.publicKey,		// payer
-				RecipientHcoinAta,		// Recipient ATA address
-				recipient,				// Recipient PDA
-				h2coin_mint
-			)
-			instructions.push(ataIx);
-		}
 
 
 		// Withdraw instruction
 		const withdrawIx = await program.methods
-			.withdrawFromVault(recipient)
+			.withdrawFromVault()
 			.accounts({
 				investmentInfo: investmentInfoPda,
 				usdtMint: usdt_mint,
 				hcoinMint: h2coin_mint,
-				tokenProgram: TOKEN_PROGRAM_ID,
-				systemProgram: Anchor.web3.SystemProgram.programId,
-				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+
+				vault: vaultPda,
+				vaultUsdtAccount: vaultUsdtAta,
+				vaultHcoinAccount: vaultH2coinAta,
+
+				recipientAccount: recipient,
+				recipientUsdtAccount: RecipientUsdtAta,
+				recipientHcoinAccount: RecipientHcoinAta,
+
 				payer: payer.publicKey,
+				systemProgram: Anchor.web3.SystemProgram.programId,
+				tokenProgram: TOKEN_PROGRAM_ID,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 			} as any)
 			.remainingAccounts([
 				...threeExecSigners.map((kp) => ({
@@ -1891,12 +1834,6 @@ describe("Investment Record management", async () => {
 					isWritable: false,
 					isSigner: true,
 				})),
-				{ pubkey: vaultPda, isWritable: true, isSigner: false },
-				{ pubkey: vaultUsdtAta, isWritable: true, isSigner: false },
-				{ pubkey: vaultH2coinAta, isWritable: true, isSigner: false },
-				{ pubkey: recipient, isWritable: true, isSigner: false },
-				{ pubkey: RecipientUsdtAta, isWritable: true, isSigner: false },
-				{ pubkey: RecipientHcoinAta, isWritable: true, isSigner: false },
 			])
 			.instruction();
 
@@ -1907,51 +1844,4 @@ describe("Investment Record management", async () => {
 		const txSig = await provider.sendAndConfirm(tx, threeExecSigners);
 		console.log(`${indent}✅ withdrawFromVault successful, tx:`, txSig);
 	});
-
-*/
-
-	function createSafeAtaIx({
-		payer,
-		owner,
-		mint,
-	}: {
-		payer: PublicKey;
-		owner: PublicKey;
-		mint: PublicKey;
-	}): { ata: PublicKey; ix: TransactionInstruction } {
-
-		
-		const ata = PublicKey.findProgramAddressSync(
-			[
-				owner.toBuffer(),
-				TOKEN_PROGRAM_ID.toBuffer(),
-				mint.toBuffer(),
-			],
-			ASSOCIATED_TOKEN_PROGRAM_ID
-		)[0];
-
-		const ix = new TransactionInstruction({
-			programId: ASSOCIATED_TOKEN_PROGRAM_ID,
-			keys: [
-			{ pubkey: payer, isSigner: true, isWritable: true },
-			{ pubkey: ata, isSigner: false, isWritable: true },
-			{ pubkey: owner, isSigner: false, isWritable: false },
-			{ pubkey: mint, isSigner: false, isWritable: false },
-			{ pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-			{ pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
-			],
-			data: Buffer.alloc(0),
-		});
-
-		return { ata, ix };
-	}
-
-
-	function isValidSolanaWalletAddress(address: PublicKey): boolean {
-		try {
-			return PublicKey.isOnCurve(address.toBytes());
-		} catch (error) {
-			return false;
-		}
-	}
 });

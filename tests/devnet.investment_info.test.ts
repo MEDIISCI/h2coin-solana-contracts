@@ -3,6 +3,12 @@ import { describe, it } from "mocha";
 import * as Anchor from "@coral-xyz/anchor";
 import { ComputeBudgetProgram } from "@solana/web3.js";
 
+import { 
+	ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, ACCOUNT_SIZE,
+	getAssociatedTokenAddress,
+} from "@solana/spl-token";
+
+
 import { stringToFixedU8Array, stage_ratio_map, 
 	loadExecuteWhitelistKeypairs, loadUpdateWhitelistKeypairs, 
 	loadWithdrawWhitelistKeypairs, 
@@ -13,8 +19,8 @@ import { create } from "domain";
 
 
 describe("Investment Info", async function() {
-	const __investmentId = "02SEHzIZfBcp222";
-	const __version = "3e2ea006";
+	const __investmentId = "02SEHzIZfBcp111";
+	const __version = "3e2ea008";
 
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
 		units: 400_000, // try 400k or 500k if needed
@@ -30,10 +36,14 @@ describe("Investment Info", async function() {
 		
 		const program = R.program;
 		const provider = R.provider;
+		const payer = provider.wallet;
+		const usdt_mint = R.usdt_mint;
+		const h2coin_mint = R.h2coin_mint;
+
 
 		const investmentId = stringToFixedU8Array(__investmentId, 15);
 		R.investmentId = investmentId;
-		
+
 		const version = stringToFixedU8Array(__version, 4, "hex");
 		R.version = version;
 
@@ -54,17 +64,33 @@ describe("Investment Info", async function() {
 		const updateWhitelist = loadUpdateWhitelistKeypairs().map(k => k.publicKey).slice(0, 5);
 		const withdrawWhitelist = loadWithdrawWhitelistKeypairs().map(k => k.publicKey).slice(0, 1);
 
-		
+
 		// Compute PDA once for all tests
-        const [investmentInfoPda] = Anchor.web3.PublicKey.findProgramAddressSync(
-            [
+		const [investmentInfoPda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
 				Buffer.from("investment"), 
 				Buffer.from(investmentId), 
 				Buffer.from(version)
 			],
-            program.programId
-        );
+			program.programId
+		);
 		R.investmentInfoPda = investmentInfoPda;
+
+
+		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
+				Buffer.from("vault"),
+				Buffer.from(investmentId),
+				Buffer.from(version),
+			],
+			program.programId
+		);
+
+
+		const [vaultUsdtAta, vaultH2coinAta] = await Promise.all([
+			getAssociatedTokenAddress(usdt_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID),
+			getAssociatedTokenAddress(h2coin_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID)
+		]);
 
 
 		try {
@@ -83,8 +109,17 @@ describe("Investment Info", async function() {
 			)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
+				usdtMint: usdt_mint,
+				hcoinMint: h2coin_mint,
+
+				vault: vaultPda,
+				vaultUsdtAccount: vaultUsdtAta,
+				vaultHcoinAccount: vaultH2coinAta,
+
+				payer: payer.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
+				tokenProgram: TOKEN_PROGRAM_ID,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 			} as any)
 			.preInstructions([modifyComputeUnits])
 			.rpc();
@@ -97,22 +132,57 @@ describe("Investment Info", async function() {
 			expect(investmentInfo.isActive).to.equal(true);
 		} catch (e:any) {
 			const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
-			expect(logs).to.include("already in use");
+			if (logs) {
+				expect(logs).to.include("already in use");	
+			}
+			else {
+				const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
+				expect(investmentInfo.state).to.have.property("completed");
+				expect(investmentInfo.isActive).to.equal(false);
+			}
 		}
 		
+
+		const vaultInfo = await provider.connection.getBalance(vaultPda);
+		function isTokenAccount(buffer: Buffer): boolean {
+			return buffer.length === ACCOUNT_SIZE;
+		}
+
+		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
+		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
+			console.log("❌ USDT ATA does not exist");
+			return;
+		}
+
+		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
+		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
+			console.log("❌ H2COIN ATA does not exist");
+			return;
+		}
+
+		const [usdtBalance, h2coinBalance] = await Promise.all([
+			provider.connection.getTokenAccountBalance(vaultUsdtAta),
+			provider.connection.getTokenAccountBalance(vaultH2coinAta),
+		]);
+
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
 		console.log(`${indent}✅ (0) Initialize investment info:`, {
 			investmentId: bytesToFixedString(investmentInfo.investmentId),
-			version: investmentInfo.version.map(n => n.toString(16).padStart(2, '0')).join(''),
+			version: Buffer.from(version).toString('hex'),
 			investmentType: Object.keys(investmentInfo.investmentType)[0],
 			stageRatio: investmentInfo.stageRatio.toString(),
 			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
+			executeWhitelist: investmentInfo.executeWhitelist.map(r=>r.toBase58()).join(', '),
+			updateWhitelist: investmentInfo.updateWhitelist.map(r=>r.toBase58()).join(', '),
+			withdrawWhitelist: investmentInfo.withdrawWhitelist.map(r=>r.toBase58()).join(', '),
 			state: Object.keys(investmentInfo.state)[0],
-			isActive: investmentInfo.isActive,
 			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
 			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
-			createdAt: new Date(investmentInfo.createdAt.toNumber()*1000),
+			vaultPda: investmentInfo.vault.toBase58(),
+			solBalance: vaultInfo / Anchor.web3.LAMPORTS_PER_SOL,
+			usdtBalance: usdtBalance.value.uiAmountString ?? '0',
+			h2coinBalance: h2coinBalance.value.uiAmountString ?? '0',
 		});
 	});
 
@@ -124,8 +194,17 @@ describe("Investment Info", async function() {
 
 		const program = R.program;
 		const provider = R.provider;
-		const investmentId = R.investmentId;
-		const version = R.version;
+		const payer = provider.wallet;
+		const usdt_mint = R.usdt_mint;
+		const h2coin_mint = R.h2coin_mint;
+
+
+		const investmentId = stringToFixedU8Array(__investmentId, 15);
+		R.investmentId = investmentId;
+
+		const version = stringToFixedU8Array(__version, 4, "hex");
+		R.version = version;
+
 		const investmentType = { csr:{} };
 
 		const stageRatioRows = [
@@ -145,15 +224,31 @@ describe("Investment Info", async function() {
 
 
 		// Compute PDA once for all tests
-        const [investmentInfoPda] = Anchor.web3.PublicKey.findProgramAddressSync(
-            [
+		const [investmentInfoPda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
 				Buffer.from("investment"), 
 				Buffer.from(investmentId), 
 				Buffer.from(version)
 			],
-            program.programId
-        );
+			program.programId
+		);
 		R.investmentInfoPda = investmentInfoPda;
+
+
+		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
+				Buffer.from("vault"),
+				Buffer.from(investmentId),
+				Buffer.from(version),
+			],
+			program.programId
+		);
+
+
+		const [vaultUsdtAta, vaultH2coinAta] = await Promise.all([
+			getAssociatedTokenAddress(usdt_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID),
+			getAssociatedTokenAddress(h2coin_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID)
+		]);
 
 
 		try {
@@ -172,13 +267,21 @@ describe("Investment Info", async function() {
 			)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				payer: provider.wallet.publicKey,
+				usdtMint: usdt_mint,
+				hcoinMint: h2coin_mint,
+
+				vault: vaultPda,
+				vaultUsdtAccount: vaultUsdtAta,
+				vaultHcoinAccount: vaultH2coinAta,
+
+				payer: payer.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
+				tokenProgram: TOKEN_PROGRAM_ID,
+				associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
 			} as any)
 			.preInstructions([modifyComputeUnits])
 			.rpc();
 
-			
 			// assertion
 			const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
 			expect(investmentInfo.investmentId).to.deep.equal(investmentId);
@@ -186,24 +289,58 @@ describe("Investment Info", async function() {
 			expect(investmentInfo.state).to.have.property("pending");
 			expect(investmentInfo.isActive).to.equal(true);
 		} catch (e:any) {
-			const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-			expect(investmentInfo.state).to.have.property("completed");
-			expect(investmentInfo.isActive).to.equal(false);
+			const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
+			if (logs) {
+				expect(logs).to.include("already in use");	
+			}
+			else {
+				const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
+				expect(investmentInfo.state).to.have.property("completed");
+				expect(investmentInfo.isActive).to.equal(false);
+			}
 		}
 		
 
+		const vaultInfo = await provider.connection.getBalance(vaultPda);
+		function isTokenAccount(buffer: Buffer): boolean {
+			return buffer.length === ACCOUNT_SIZE;
+		}
+
+		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
+		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
+			console.log("❌ USDT ATA does not exist");
+			return;
+		}
+
+		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
+		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
+			console.log("❌ H2COIN ATA does not exist");
+			return;
+		}
+
+		const [usdtBalance, h2coinBalance] = await Promise.all([
+			provider.connection.getTokenAccountBalance(vaultUsdtAta),
+			provider.connection.getTokenAccountBalance(vaultH2coinAta),
+		]);
+
+
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		console.log(`${indent}✅ (1) Fail initialize investment info:`, {
+		console.log(`${indent}✅ (0) Initialize investment info:`, {
 			investmentId: bytesToFixedString(investmentInfo.investmentId),
-			version: investmentInfo.version.map(n => n.toString(16).padStart(2, '0')).join(''),
+			version: Buffer.from(version).toString('hex'),
 			investmentType: Object.keys(investmentInfo.investmentType)[0],
 			stageRatio: investmentInfo.stageRatio.toString(),
 			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
+			executeWhitelist: investmentInfo.executeWhitelist.map(r=>r.toBase58()).join(', '),
+			updateWhitelist: investmentInfo.updateWhitelist.map(r=>r.toBase58()).join(', '),
+			withdrawWhitelist: investmentInfo.withdrawWhitelist.map(r=>r.toBase58()).join(', '),
 			state: Object.keys(investmentInfo.state)[0],
-			isActive: investmentInfo.isActive,
 			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
 			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
-			createdAt: new Date(investmentInfo.createdAt.toNumber()*1000),
+			vaultPda: investmentInfo.vault.toBase58(),
+			solBalance: vaultInfo / Anchor.web3.LAMPORTS_PER_SOL,
+			usdtBalance: usdtBalance.value.uiAmountString ?? '0',
+			h2coinBalance: h2coinBalance.value.uiAmountString ?? '0',
 		});
 
 	});

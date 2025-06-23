@@ -92,23 +92,21 @@ pub mod h2coin_vault_share {
         batch_id: u16,
         record_id: u64,
         account_id: [u8; 15],
-        wallet: Pubkey,
         amount_usdt: u64,
         amount_hcoin: u64,
         investment_stage: u8,
     ) -> Result<()> {
-        instructions::add_investment_record(ctx, batch_id, record_id, account_id, wallet, amount_usdt, amount_hcoin, investment_stage)
+        instructions::add_investment_record(ctx, batch_id, record_id, account_id, amount_usdt, amount_hcoin, investment_stage)
     }
 
     pub fn update_investment_record_wallets<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, UpdateInvestmentRecordWallets<'info>>,
         account_id: [u8; 15],
-        new_wallet: Pubkey,
     ) -> Result<()> 
     where 
         'c: 'info,
     {
-        instructions::update_investment_record_wallets(ctx, account_id, new_wallet)
+        instructions::update_investment_record_wallets(ctx, account_id)
     }
 
     pub fn revoked_investment_record(
@@ -179,12 +177,11 @@ pub mod h2coin_vault_share {
 
     pub fn withdraw_from_vault<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, WithdrawFromVault<'info>>,
-        recipient: Pubkey
     ) -> Result<()>
     where
         'c: 'info,
     {
-        instructions::withdraw_from_vault(ctx, recipient)
+        instructions::withdraw_from_vault(ctx)
     }
 
 

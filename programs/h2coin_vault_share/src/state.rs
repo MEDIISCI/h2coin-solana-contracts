@@ -214,13 +214,12 @@ pub struct ProfitEntry {
     pub wallet: Pubkey,
     pub amount_usdt: u64,
     pub ratio_bp: u16,
-    pub recipient_ata: Pubkey,
 }
 
 impl ProfitShareCache {
-    // ENTRY_SIZE is 89 bytes
-    pub const ENTRY_SIZE: usize = 15 + 32 + 8 + 2 + 32;
-    // Size is 2735 bytes
+    // ENTRY_SIZE is 57 bytes
+    pub const ENTRY_SIZE: usize = 15 + 32 + 8 + 2;
+    // Size is 1775 bytes
     pub const SIZE: usize =
         8 +     // discriminator
         2 +     // batch_id        
@@ -231,7 +230,7 @@ impl ProfitShareCache {
         8 +     // executed_at
         8 +     // created_at
         4 +     // Vec length prefix
-        MAX_ENTRIES_PER_BATCH * Self::ENTRY_SIZE; // 25 × 57
+        MAX_ENTRIES_PER_BATCH * Self::ENTRY_SIZE; // 30 × 57 = 1710
 }
 
 //
@@ -257,13 +256,12 @@ pub struct RefundEntry {
     pub wallet: Pubkey,
     pub amount_hcoin: u64,
     pub stage: u8,
-    pub recipient_ata: Pubkey,
 }
 
 impl RefundShareCache {
-    // ENTRY_SIZE is 88 bytes
-    pub const ENTRY_SIZE: usize = 15 + 32 + 8 + 1 + 32;
-    // Size is 2706 bytes
+    // ENTRY_SIZE is 56 bytes
+    pub const ENTRY_SIZE: usize = 15 + 32 + 8 + 1;
+    // Size is 1746 bytes
     pub const SIZE: usize =
         8 +  // anchor discriminator
         2 +  // batch_id
@@ -275,7 +273,7 @@ impl RefundShareCache {
         8 +  // executed_at
         8 +  // created_at
         4 +  // Vec length prefix
-        MAX_ENTRIES_PER_BATCH * Self::ENTRY_SIZE;
+        MAX_ENTRIES_PER_BATCH * Self::ENTRY_SIZE; // 30 × 56 = 1680
 
     /// Get refund percentage from stage_ratio
     /// 
