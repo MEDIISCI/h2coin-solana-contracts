@@ -14,10 +14,8 @@ local-ledger
 node_modules
 test-ledger
 target/debug
-target/idl
 target/release
 target/build
-target/types
 target/sbf-solana-solana
 target/.rustc_info.json
 .yarn
