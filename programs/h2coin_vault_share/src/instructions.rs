@@ -901,7 +901,7 @@ where
         require!(record.account_id.len() == 15, ErrorCode::InvalidAccountIdLength);
         if record.revoked_at != 0 {
            msg!(
-                "⚠️ Skipping revoked record_id={} for account_id={}",
+                "🟡 Skipping revoked record_id={} for account_id={}",
                 record.record_id,
                 String::from_utf8_lossy(&record.account_id).trim_end_matches('\0')
             );
@@ -1107,7 +1107,7 @@ where
         require!(record.account_id.len() == 15, ErrorCode::InvalidAccountIdLength);
         if record.revoked_at != 0 {
             msg!(
-                "⚠️ Skipping revoked record_id={} for account_id={}",
+                "🟡 Skipping revoked record_id={} for account_id={}",
                 record.record_id,
                 String::from_utf8_lossy(&record.account_id).trim_end_matches('\0')
             );
@@ -1283,8 +1283,6 @@ where
     require_keys_eq!(vault_token_account.mint, mint.key(), ErrorCode::InvalidTokenMint);
     require!(vault_token_account.amount >= cache.subtotal_profit_usdt, ErrorCode::InsufficientTokenBalance);
     require!(vault.to_account_info().lamports() >= cache.subtotal_estimate_sol, ErrorCode::InsufficientSolBalance);
-    msg!("🟢 BatchId: {}, Vault Token USDT balance: {}", batch_id, vault_token_account.amount);
-    msg!("🟢 BatchId: {}, Required subtotal_profit_usdt: {}", batch_id, cache.subtotal_profit_usdt);
 
 
     let mut total_transferred: u64 = 0;
@@ -1301,12 +1299,6 @@ where
             .find(|acc| acc.key == &recipient_ata)
             .ok_or(ErrorCode::MissingAssociatedTokenAccount)?;
 
-        // let ata_info = recipient_ata_info;
-        // msg!("🟢 recipient: {}, derived ATA: {}", recipient, recipient_ata_info.key);
-        // msg!("    key: {}", ata_info.key);
-        // msg!("    owner: {}", ata_info.owner);
-        // msg!("    is_signer: {}", ata_info.is_signer);
-        // msg!("    is_writable: {}", ata_info.is_writable);
 
         // transfer token to investors
         let result = transfer_token_checked(
@@ -1323,21 +1315,21 @@ where
         match result {
             Ok(_) => {
                 successes.push(recipient);
+                
                 total_transferred = total_transferred
-                    .checked_add(entry.amount_usdt)
-                    .ok_or(ErrorCode::NumericalOverflow)?;
+                .checked_add(entry.amount_usdt)
+                .ok_or(ErrorCode::NumericalOverflow)?;
 
-                // emit!(ProfitPaidEvent {
-                //     investment_id: info.investment_id,
-                //     version: info.version,
-                //     to: recipient,
-                //     amount_usdt: entry.amount_usdt,
-                //     pay_at: now,
-                // });
+                emit!(ProfitPaidEvent {
+                    investment_id: info.investment_id,
+                    version: info.version,
+                    to: recipient,
+                    amount_usdt: entry.amount_usdt,
+                    pay_at: now,
+                });
             }
             Err(_e) => {
                 failures.push(recipient);
-                // msg!("❌ Transfer to {} failed: {:?}", recipient, e);
             }
         }
     }
@@ -1349,9 +1341,9 @@ where
 
     if successes.len() == cache.entries.len() {
         cache.executed_at = now;
-        msg!("🟢 All {} transfers succeeded", successes.len());
+        msg!("🟢 All succeeded: {}, {} USDT", successes.len(), total_transferred);
     } else {
-        msg!("⚠️ Partial success: {} succeeded, {} failed", successes.len(), failures.len());
+        msg!("🟡 Partial success: {} succeeded, {} failed", successes.len(), failures.len());
     }
 
 
@@ -1364,12 +1356,6 @@ where
         executed_at: now,
         signers: signer_keys,
     });
-
-    msg!(
-        "Executed profit share: {} entries, {} USDT",
-        cache.entries.len(),
-        total_transferred
-    );
 
     Ok(())
 }
@@ -1476,15 +1462,13 @@ where
     require_keys_eq!(mint.key(), get_hcoin_mint(), ErrorCode::InvalidTokenMint);
     require_keys_eq!(vault_token_account.mint, mint.key(), ErrorCode::InvalidTokenMint);
     require!(vault.lamports() >= cache.subtotal_estimate_sol, ErrorCode::InsufficientSolBalance);
-    msg!("🟢 BatchId: {}, Vault Token USDT balance: {}", batch_id, vault_token_account.amount);
-    msg!("🟢 BatchId: {}, Required subtotal_profit_usdt: {}", batch_id, cache.subtotal_refund_hcoin);
     require!(vault_token_account.amount >= cache.subtotal_refund_hcoin, ErrorCode::InsufficientTokenBalance);
 
 
     // Loop through entries and process refund
     let mut total_transferred = 0u64;
     let mut successes: Vec<Pubkey> = vec![];
-    let mut failures: Vec<(Pubkey, String)> = vec![];
+    let mut failures: Vec<Pubkey> = vec![];
 
     for entry in cache.entries.iter() {
         let recipient = entry.wallet;
@@ -1513,8 +1497,8 @@ where
                 successes.push(recipient);
 
                 total_transferred = total_transferred
-                    .checked_add(entry.amount_hcoin)
-                    .ok_or(ErrorCode::NumericalOverflow)?;
+                .checked_add(entry.amount_hcoin)
+                .ok_or(ErrorCode::NumericalOverflow)?;
 
                 emit!(RefundPaidEvent {
                     investment_id: info.investment_id,
@@ -1524,9 +1508,8 @@ where
                     pay_at: now,
                 });
             }
-            Err(e) => {
-                failures.push((recipient, format!("{:?}", e)));
-                msg!("❌ Transfer to {} failed: {:?}", recipient, e);
+            Err(_e) => {
+                failures.push(recipient);
             }
         }
     }
@@ -1538,9 +1521,9 @@ where
 
     if successes.len() == cache.entries.len() {
         cache.executed_at = now;
-        msg!("🟢 All {} transfers succeeded", successes.len());
+        msg!("🟢 All succeeded: {}, {} H2COIN", successes.len(), total_transferred);
     } else {
-        msg!("⚠️ Partial success: {} succeeded, {} failed", successes.len(), failures.len());
+        msg!("🟡 Partial success: {} succeeded, {} failed", successes.len(), failures.len());
     }
 
     emit!(RefundShareExecuted {
@@ -1554,11 +1537,7 @@ where
         signers: signer_keys.clone(),
     });
 
-    msg!(
-        "🟢 Executed refund share: {} entries, {} H2COIN",
-        cache.entries.len(),
-        total_transferred
-    );
+
     
 
     Ok(())
@@ -1608,7 +1587,6 @@ pub fn deposit_sol_to_vault(ctx: Context<DepositSolToVault>, amount: u64) -> Res
         deposit_at: now,
     });
 
-    msg!("🟢 Deposited {} lamports to vault", amount);
     Ok(())
 }
 
@@ -1653,15 +1631,12 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
         expected_vault_token_ata,
         ErrorCode::InvalidVaultAta
     );
-    msg!("🟢 from.owner: {}", ctx.accounts.from.owner);
-    msg!("🟢 payer: {}", ctx.accounts.payer.key());
 
     require_keys_eq!(
         ctx.accounts.from.owner.key(),
         ctx.accounts.payer.key(),
         ErrorCode::InvalidFromOwner
     );
-
 
     // Transfer token to vault ATA
     transfer_token_checked(

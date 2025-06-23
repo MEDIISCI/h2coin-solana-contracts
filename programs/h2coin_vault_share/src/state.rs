@@ -93,8 +93,6 @@ impl InvestmentInfo {
             &self.execute_whitelist
         };
 
-        msg!("🟢 Whitelist: {:?}", whitelist);
-
         // ✅ Enforce must be exactly 5 members during execution
         require!(
             whitelist.len() == MAX_WHITELIST_LEN,
