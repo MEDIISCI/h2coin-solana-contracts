@@ -28,8 +28,8 @@ describe("📃 Profit/Refund share Management", function () {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcp222";
-	const __version = "c9060000";
+	const __investmentId = "02SEHzIZfBcpIZ5";
+	const __version = "b9b64000";
 	
 	const yearIndex = 3;
 	const yearIndexBytes = Uint8Array.of(yearIndex);

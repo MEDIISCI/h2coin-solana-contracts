@@ -25,8 +25,8 @@ describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcp222";
-	const __version = "3e2ea001";
+	const __investmentId = "02SEHzIZfBcpIZ3";
+	const __version = "b9b64000";
 
 
 	const batchId = 1;
