@@ -1003,7 +1003,20 @@ describe("Investment Record management", async () => {
 			const signature = await provider.connection.sendTransaction(versionedTx, {
 				skipPreflight: false,
 			});
-			console.log(`${indent}✅ Estimating for batchId=${batchId}, count=${totalRecords.length}, signature=${signature}`);
+
+
+			// Wait before confirming transaction
+			await new Promise(res => setTimeout(res, 5000));
+
+
+			const result = await provider.connection.confirmTransaction({
+				signature,
+				blockhash: blockhash.blockhash,
+				lastValidBlockHeight: blockhash.lastValidBlockHeight,
+			});
+			console.log(`${indent}------------------------`);
+			console.log(`${indent}✅ Estimating Profit for batchId: ${batchId}, count: ${totalRecords.length}, signature: ${signature}`);
+			console.log(`${indent}📦 Estimating Profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 
 			
 			// Generate report
@@ -1071,7 +1084,7 @@ describe("Investment Record management", async () => {
 
 
 		// Get all total records in this batch and calculte invetment record PDAs
-		const totalBatchRecods = await program.account.investmentRecord.all([
+		const totalRecords = await program.account.investmentRecord.all([
 			{
 				memcmp: {
 					offset: 8, // discriminator + batch_id
@@ -1091,7 +1104,7 @@ describe("Investment Record management", async () => {
 				},
 			},
 		]);
-		const investmentRecordPdas = totalBatchRecods.map(record => record.publicKey);
+		const investmentRecordPdas = totalRecords.map(record => record.publicKey);
 
 
 		let errorCaught = false;
@@ -1139,11 +1152,18 @@ describe("Investment Record management", async () => {
 				skipPreflight: false,
 			});
 
-			const signResult = await provider.connection.confirmTransaction({
+			// Wait before confirming transaction
+			await new Promise(res => setTimeout(res, 5000));
+
+
+			const result = await provider.connection.confirmTransaction({
 				signature,
 				blockhash: blockhash.blockhash,
 				lastValidBlockHeight: blockhash.lastValidBlockHeight,
 			});
+			console.log(`${indent}------------------------`);
+			console.log(`${indent}✅ Estimating Refund for batchId: ${batchId}, count: ${totalRecords.length}, signature: ${signature}`);
+			console.log(`${indent}📦 Estimating Refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 
 			
 			// Generate report

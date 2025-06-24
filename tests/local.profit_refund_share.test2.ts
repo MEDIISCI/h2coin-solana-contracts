@@ -628,8 +628,8 @@ describe("🚀 Profit/Refund share Management", function () {
 					},
 					"confirmed"
 				);
-				console.log(`${indent}-----`);
-				console.log(`${indent}✅ Estimating profit for batchId=${batchId}, count=${batch_data.length}, signature=${signature}`);
+				console.log(`${indent}------------------------`);
+				console.log(`${indent}✅ Estimating profit for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
 				console.log(`${indent}📦 Estimating profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 				
 
@@ -810,7 +810,8 @@ describe("🚀 Profit/Refund share Management", function () {
 					},
 					"confirmed"
 				);
-				console.log(`${indent}✅ Estimating refund for batchId=${batchId}, count=${batch_data.length}, signature=${signature}`);
+				console.log(`${indent}------------------------`);
+				console.log(`${indent}✅ Estimating refund for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
 				console.log(`${indent}📦 Estimating refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 					
 
