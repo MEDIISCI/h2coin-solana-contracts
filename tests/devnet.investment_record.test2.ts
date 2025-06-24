@@ -1532,7 +1532,7 @@ describe("Investment Record management", async () => {
 				lastValidBlockHeight: blockhash.lastValidBlockHeight,
 			});
 			
-			console.log("✅ ALT-based executeProfitShare tx:", signature);
+			console.log(`${indent}✅ ALT-based executeProfitShare signature=${signature}`);
 		} catch (e:any) {
 			console.error("❌ TX failed:", e.message ?? e);
 			expect(e.logs).to.not.be.undefined;
@@ -1737,7 +1737,7 @@ describe("Investment Record management", async () => {
 				lastValidBlockHeight: blockhash.lastValidBlockHeight,
 			});
 			
-			console.log(`${indent}✅ ALT-based executeRefundShare tx:`, signature);
+			console.log(`${indent}✅ ALT-based executeRefundShare signature=${signature}`);
 		} catch (e:any) {
 	
 		}
