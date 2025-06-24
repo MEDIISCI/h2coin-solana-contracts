@@ -25,8 +25,8 @@ describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcpIZ3";
-	const __version = "b9b64000";
+	const __investmentId = "02SEHzIZfBcp222";
+	const __version = "3e2ea001";
 
 
 	const batchId = 1;
@@ -47,7 +47,7 @@ describe("Investment Record management", async () => {
 	before("Initialize investment info with CSR type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Initialize invesgtment info with CSR type program...`);
+		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -191,7 +191,7 @@ describe("Investment Record management", async () => {
 	it('(0) adds new investment records (batch mode)', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Adding investment records program ...`);
+		console.log(`${indent}📃 Adding investment records program ...`);
 
 
 		const program = R.program;
@@ -269,7 +269,7 @@ describe("Investment Record management", async () => {
 				);
 				investmentRecordPdas.push(recordPda);
 
-				console.log(`${indent}recordId`, index, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt, 'recordPda:', recordPda.toBase58());
+				console.log(`${indent} recordId`, index, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt, 'recordPda:', recordPda.toBase58());
 
 				const [RecipientUsdtAta, RecipientHcoinAta] = await Promise.all([
 					getAssociatedTokenAddress(usdt_mint, wallet),
@@ -316,11 +316,12 @@ describe("Investment Record management", async () => {
 
 			try {
 				// send investment records transcation
-				const sig = await provider.sendAndConfirm(tx, threeUpdateSigners, {
+				const signature = await provider.sendAndConfirm(tx, threeUpdateSigners, {
 					commitment: "confirmed",
 					skipPreflight: false,
 				});
-				console.log(`${indent}✅ Sent recordId: ${start}~${start+1} (tx: ${sig})`);
+				console.log(`${indent}✅ Successfully inserted ${MAX_RECORDS_PER_TX} investment records into batch #${batchId}. Tx signature: ${signature}`);
+
 
 
 				await new Promise(resolve => setTimeout(resolve, 1000));
@@ -386,7 +387,7 @@ describe("Investment Record management", async () => {
 	it('(1) Update investment record wallet base on accont_id', async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Update investment record wallet base on accont_id program ...`);
+		console.log(`${indent}📃 Update investment record wallet base on accont_id program ...`);
 		
 
 		const program = R.program;
@@ -536,7 +537,7 @@ describe("Investment Record management", async () => {
 	it("(2) Revoke investment record", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Revoke investment record program...`);
+		console.log(`${indent}📃 Revoke investment record program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -679,7 +680,7 @@ describe("Investment Record management", async () => {
 	it('(4) Update investment record wallet again', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Update investment record wallet again program ...`);
+		console.log(`${indent}📃 Update investment record wallet again program ...`);
 
 
 		const program = R.program;
@@ -829,7 +830,7 @@ describe("Investment Record management", async () => {
 	it("(5) Create ALT from investment records", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Create ALT from investment records program...`);
+		console.log(`${indent}📃 Create ALT from investment records program...`);
 
 
 		const program = R.program;
@@ -878,8 +879,8 @@ describe("Investment Record management", async () => {
 		});
 
 		tx_alt.add(createIx, extendIx);
-		const signature = await provider.sendAndConfirm(tx_alt, []);
-		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature = ${signature}`);
+		const sig = await provider.sendAndConfirm(tx_alt, []);
+		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}`);
 		await new Promise(resolve => setTimeout(resolve, 1500));
 
 		let retries = 0;
@@ -902,7 +903,7 @@ describe("Investment Record management", async () => {
 	it("(6) Estimate profit share using ALT with csr type", async function () {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Estimate profit share using ALT with csr type program...`);
+		console.log(`${indent}📃 Estimate profit share using ALT with csr type program...`);
 		
 
 		const program = R.program;
@@ -1016,7 +1017,7 @@ describe("Investment Record management", async () => {
 			const info = await program.account.investmentInfo.fetch(investmentInfoPda);
 			const cache = await program.account.profitShareCache.fetch(cachePda);
 
-			console.log("🧠 Profit Cache:", {
+			console.log(`${indent}🧠 Profit Share Cache Summary:`, {
 				batchId,
 				vault: info.vault.toBase58(),
 				investmentId: Buffer.from(cache.investmentId).toString().replace(/\0/g, ""),
@@ -1029,7 +1030,7 @@ describe("Investment Record management", async () => {
 				createdAt: new Date(cache.createdAt.toNumber() * 1000).toISOString(),
 			});
 
-			console.log('show profit cache detail and count:', cache.entries.length);
+			console.log(`${indent}🧠 List profit entries and count:`, cache.entries.length);
 			for (const entry of cache.entries) {
 				const data = {
 					accountId: bytesToFixedString(entry.accountId),
@@ -1037,7 +1038,7 @@ describe("Investment Record management", async () => {
 					amountUsdt: entry.amountUsdt.toString(),
 					ratioBp: entry.ratioBp /100
 				};
-				console.log(data);
+				console.log(`${indent}`, JSON.stringify(data));
 			}
 
 			expect(errorCaught).to.be.false;

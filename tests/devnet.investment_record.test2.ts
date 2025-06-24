@@ -271,7 +271,7 @@ describe("Investment Record management", async () => {
 				);
 				investmentRecordPdas.push(recordPda);
 
-				console.log(`${indent}recordId`, index, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt, 'recordPda:', recordPda.toBase58());
+				console.log(`${indent} recordId`, index, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt, 'recordPda:', recordPda.toBase58());
 
 				const [RecipientUsdtAta, RecipientHcoinAta] = await Promise.all([
 					getAssociatedTokenAddress(usdt_mint, wallet),
@@ -317,11 +317,11 @@ describe("Investment Record management", async () => {
 
 			try {
 				// send investment records transcation
-				const sig = await provider.sendAndConfirm(tx, threeUpdateSigners, {
+				const signature = await provider.sendAndConfirm(tx, threeUpdateSigners, {
 					commitment: "confirmed",
 					skipPreflight: false,
 				});
-				console.log(`${indent}✅ Sent batch: ${batchId} (tx: ${sig})`);
+				console.log(`${indent}✅ Successfully inserted ${MAX_RECORDS_PER_TX} investment records into batch #${batchId}. Tx signature: ${signature}`);
 
 
 				await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1020,7 +1020,7 @@ describe("Investment Record management", async () => {
 			console.log(`${indent}		subtotalProfitUsdt:`, cache.subtotalProfitUsdt.toString());
 			console.log(`${indent}		subtotalEstimateSol:`, cache.subtotalEstimateSol.toString());
 			console.log(`${indent}		createdAt:`, new Date(cache.createdAt.toNumber() * 1000).toISOString());
-			
+
 
 			console.log(`${indent}🧠 List profit entries and count:`, cache.entries.length);			
 			for (const entry of cache.entries) {
