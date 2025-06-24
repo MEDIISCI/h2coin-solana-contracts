@@ -721,15 +721,7 @@ export type H2coinVaultShare = {
           }
         },
         {
-          "name": "mint"
-        },
-        {
           "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "signer",
           "writable": true,
           "signer": true
         },
@@ -846,15 +838,7 @@ export type H2coinVaultShare = {
           }
         },
         {
-          "name": "mint"
-        },
-        {
           "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "signer",
           "writable": true,
           "signer": true
         },
@@ -2570,19 +2554,6 @@ export type H2coinVaultShare = {
       ]
     },
     {
-      "name": "profitPaidEvent",
-      "discriminator": [
-        12,
-        9,
-        253,
-        100,
-        23,
-        198,
-        31,
-        73
-      ]
-    },
-    {
       "name": "profitShareEstimated",
       "discriminator": [
         245,
@@ -2606,19 +2577,6 @@ export type H2coinVaultShare = {
         5,
         184,
         137
-      ]
-    },
-    {
-      "name": "refundPaidEvent",
-      "discriminator": [
-        32,
-        195,
-        184,
-        82,
-        250,
-        81,
-        141,
-        64
       ]
     },
     {
@@ -3574,44 +3532,6 @@ export type H2coinVaultShare = {
       }
     },
     {
-      "name": "profitPaidEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "investmentId",
-            "type": {
-              "array": [
-                "u8",
-                15
-              ]
-            }
-          },
-          {
-            "name": "version",
-            "type": {
-              "array": [
-                "u8",
-                4
-              ]
-            }
-          },
-          {
-            "name": "to",
-            "type": "pubkey"
-          },
-          {
-            "name": "amountUsdt",
-            "type": "u64"
-          },
-          {
-            "name": "payAt",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
       "name": "profitShareCache",
       "type": {
         "kind": "struct",
@@ -3796,44 +3716,6 @@ export type H2coinVaultShare = {
           {
             "name": "stage",
             "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "refundPaidEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "investmentId",
-            "type": {
-              "array": [
-                "u8",
-                15
-              ]
-            }
-          },
-          {
-            "name": "version",
-            "type": {
-              "array": [
-                "u8",
-                4
-              ]
-            }
-          },
-          {
-            "name": "to",
-            "type": "pubkey"
-          },
-          {
-            "name": "amountHcoin",
-            "type": "u64"
-          },
-          {
-            "name": "payAt",
-            "type": "i64"
           }
         ]
       }

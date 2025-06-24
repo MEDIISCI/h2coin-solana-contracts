@@ -715,15 +715,7 @@
           }
         },
         {
-          "name": "mint"
-        },
-        {
           "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "signer",
           "writable": true,
           "signer": true
         },
@@ -840,15 +832,7 @@
           }
         },
         {
-          "name": "mint"
-        },
-        {
           "name": "payer",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "signer",
           "writable": true,
           "signer": true
         },
@@ -2564,19 +2548,6 @@
       ]
     },
     {
-      "name": "ProfitPaidEvent",
-      "discriminator": [
-        12,
-        9,
-        253,
-        100,
-        23,
-        198,
-        31,
-        73
-      ]
-    },
-    {
       "name": "ProfitShareEstimated",
       "discriminator": [
         245,
@@ -2600,19 +2571,6 @@
         5,
         184,
         137
-      ]
-    },
-    {
-      "name": "RefundPaidEvent",
-      "discriminator": [
-        32,
-        195,
-        184,
-        82,
-        250,
-        81,
-        141,
-        64
       ]
     },
     {
@@ -3568,44 +3526,6 @@
       }
     },
     {
-      "name": "ProfitPaidEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "investment_id",
-            "type": {
-              "array": [
-                "u8",
-                15
-              ]
-            }
-          },
-          {
-            "name": "version",
-            "type": {
-              "array": [
-                "u8",
-                4
-              ]
-            }
-          },
-          {
-            "name": "to",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_usdt",
-            "type": "u64"
-          },
-          {
-            "name": "pay_at",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
       "name": "ProfitShareCache",
       "type": {
         "kind": "struct",
@@ -3790,44 +3710,6 @@
           {
             "name": "stage",
             "type": "u8"
-          }
-        ]
-      }
-    },
-    {
-      "name": "RefundPaidEvent",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "investment_id",
-            "type": {
-              "array": [
-                "u8",
-                15
-              ]
-            }
-          },
-          {
-            "name": "version",
-            "type": {
-              "array": [
-                "u8",
-                4
-              ]
-            }
-          },
-          {
-            "name": "to",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_hcoin",
-            "type": "u64"
-          },
-          {
-            "name": "pay_at",
-            "type": "i64"
           }
         ]
       }
