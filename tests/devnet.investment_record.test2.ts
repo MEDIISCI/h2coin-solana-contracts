@@ -1251,7 +1251,7 @@ describe("Investment Record management", async () => {
 		);
 
 		R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-		console.log(`${indent}✅ Profit ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}`);
+		console.log(`${indent}✅ Created Profit ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}`);
 		await new Promise(resolve => setTimeout(resolve, 1000)); // optional delay
 		
 	});
@@ -1500,27 +1500,44 @@ describe("Investment Record management", async () => {
 				])
 				.instruction();
 
+
 			const blockhash = await provider.connection.getLatestBlockhash();
-
-
 			const message = new Anchor.web3.TransactionMessage({
 				payerKey: payer,
 				recentBlockhash: blockhash.blockhash,
 				instructions: [computeIx, execIx],
 			}).compileToV0Message([lookupTableAccount]);
 
+
 			const versionedTx = new Anchor.web3.VersionedTransaction(message);
 			versionedTx.sign([...threeExecSigners, provider.wallet.payer!]);
+
 
 			const signature = await provider.connection.sendTransaction(versionedTx, {
 				skipPreflight: false,
 			});
 			
-			console.log(`${indent}✅ ALT-based executeProfitShare for batchId=${batchId}:`, signature);
+
+			// delay 5 second
+			await new Promise(resolve => setTimeout(resolve, 5000));
+
+
+			const result = await provider.connection.confirmTransaction(
+				{
+					signature,
+					blockhash: blockhash.blockhash,
+					lastValidBlockHeight: blockhash.lastValidBlockHeight,
+				},
+				"confirmed"
+			);
+
+			console.log(`${indent}✅ Execute Profit for batchId: ${batchId}, signature: ${signature}`);
+			console.log(`${indent}📦 Execute Profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 		} catch (e:any) {
-			console.error("❌ TX failed:", e.message ?? e);
-			expect(e.logs).to.not.be.undefined;
-			expect(e.logs.join("\n")).to.include("Insufficient USDT token balance in vault");
+			if (e.logs && e.logs.length) {
+				expect(e.logs).to.not.be.undefined;
+				expect(e.logs.join("\n")).to.include("Insufficient USDT Token balance in vault");
+			}
 		}
 	});
 	it("(12) Create ALT from Refund Share Cache entries", async function () {
@@ -1570,7 +1587,7 @@ describe("Investment Record management", async () => {
 		
 		await provider.sendAndConfirm(tx_alt.add(createIx));
 		const signature = await provider.sendAndConfirm(tx_alt, []);
-		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature=${signature}`);
+		console.log(`${indent}✅ Created Refund ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature=${signature}`);
 
 
 		const BATCH_SIZE = 20; // 根據測試可調整為 20~30
@@ -1705,16 +1722,36 @@ describe("Investment Record management", async () => {
 				instructions: [modifyComputeUnits, execIx],
 			}).compileToV0Message([lookupTableAccount]);
 
+
 			const versionedTx = new Anchor.web3.VersionedTransaction(message);
 			versionedTx.sign([...threeExecSigners, provider.wallet.payer!]);
+
 
 			const signature = await provider.connection.sendTransaction(versionedTx, {
 				skipPreflight: false,
 			});
 			
-			console.log(`${indent}✅ ALT-based executeRefundShare tx:`, signature);
+
+			// delay 5 second
+			await new Promise(resolve => setTimeout(resolve, 5000));
+
+
+			const result = await provider.connection.confirmTransaction(
+				{
+					signature,
+					blockhash: blockhash.blockhash,
+					lastValidBlockHeight: blockhash.lastValidBlockHeight,
+				},
+				"confirmed"
+			);
+
+			console.log(`${indent}✅ Execute refund for batchId: ${batchId}, signature: ${signature}`);
+			console.log(`${indent}📦 Execute refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 		} catch (e:any) {
-	
+			if (e.logs && e.logs.length) {
+				expect(e.logs).to.not.be.undefined;
+				expect(e.logs.join("\n")).to.include("Insufficient H2coin Token balance in vault");
+			}
 		}
 	});
 

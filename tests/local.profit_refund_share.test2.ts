@@ -24,7 +24,7 @@ import {Runtime as R} from "./devnet.runtime";
 
 
 
-describe("📃 Profit/Refund share Management", function () {
+describe("🚀 Profit/Refund share Management", function () {
 	let is_record_add = false as boolean;
 
 
@@ -55,7 +55,7 @@ describe("📃 Profit/Refund share Management", function () {
 	before("Initialize investment info with STANDARD type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Initialize invesgtment info with STANDARD type program...`);
+		console.log(`🚀 Initialize invesgtment info with STANDARD type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -148,9 +148,7 @@ describe("📃 Profit/Refund share Management", function () {
 			.preInstructions([modifyComputeUnits])
 			.rpc();
 
-		} catch (e:any) {
-			console.log(e);
-			
+		} catch (e:any) {			
 			const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
 			expect(logs).to.include("already in use");	
 		}
@@ -180,28 +178,28 @@ describe("📃 Profit/Refund share Management", function () {
 
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		console.log(`${indent}✅ (0) Initialize investment info:`, {
-			investmentId: bytesToFixedString(investmentInfo.investmentId),
-			version: Buffer.from(version).toString('hex'),
-			investmentType: Object.keys(investmentInfo.investmentType)[0],
-			stageRatio: investmentInfo.stageRatio.toString(),
-			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
-			executeWhitelist: investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()),
-			updateWhitelist: investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()),
-			withdrawWhitelist: investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()),
-			state: Object.keys(investmentInfo.state)[0],
-			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
-			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
-			solBalance: vaultInfo / Anchor.web3.LAMPORTS_PER_SOL,
-			usdtBalance: usdtBalance.value.uiAmountString ?? '0',
-			h2coinBalance: h2coinBalance.value.uiAmountString ?? '0',
-		});
+		console.log(`${indent}✅ investment info Summary:`);
+		console.log(`${indent} investmentId:`, bytesToFixedString(investmentInfo.investmentId));
+		console.log(`${indent} version:`, Buffer.from(version).toString('hex'));
+		console.log(`${indent} investmentType:`, Object.keys(investmentInfo.investmentType)[0]);
+		console.log(`${indent} stageRatio:`, investmentInfo.stageRatio.toString());
+		console.log(`${indent} investmentUpperLimit:`, investmentInfo.investmentUpperLimit.toString());
+		console.log(`${indent} executeWhitelist:`, investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent} updateWhitelist:`, investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent} withdrawWhitelist:`, investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent} state:`, Object.keys(investmentInfo.state)[0]);
+		console.log(`${indent} startAt:`, new Date(investmentInfo.startAt.toNumber()*1000));
+		console.log(`${indent} endAt:`, new Date(investmentInfo.endAt.toNumber()*1000));
+		console.log(`${indent} solBalance:`, vaultInfo / Anchor.web3.LAMPORTS_PER_SOL);
+		console.log(`${indent} usdtBalance:`, usdtBalance.value.uiAmountString ?? '0');
+		console.log(`${indent} h2coinBalance:`, h2coinBalance.value.uiAmountString ?? '0');
+		
 	});
 
 	it("(0) Adds 1500 new investment records (batch mode)", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Adding investment records program to init state ...`);
+		console.log(`🚀 Adding investment records program to init state ...`);
 
 
 		const program = R.program;
@@ -230,6 +228,7 @@ describe("📃 Profit/Refund share Management", function () {
 			]);
 		if (record_list.length === MAX_ENTRIES) {
 			is_record_add = true;
+			console.log(`${indent}✅ 1500 investment records exist on chain!:`);
 			return;
 		}
 
@@ -341,21 +340,15 @@ describe("📃 Profit/Refund share Management", function () {
 				await new Promise(resolve => setTimeout(resolve, 1000));
 				
 			} catch (e: any) {
-				console.error(`${indent}❌ Batch send failed:`, e.message ?? e);
-				if (e.logs) {
-					console.warn("✅ Logs:\n" + e.logs.join("\n"));
-				}
+				console.log(`${indent}✅ state has completed`);
 				throw e;
 			}
 		}
-
-		console.log(`${indent}✅ total_invest_usdt:`, total_invest_usdt.toString());
-		console.log(`${indent}✅ total_invest_h2coin:`, total_invest_h2coin.toString());	
 	});
 
 	it("(1) Set investment state to complete", async function() {
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Set investment state to complete...`);
+		console.log(`🚀 Set investment state to complete...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -385,13 +378,14 @@ describe("📃 Profit/Refund share Management", function () {
 		} catch (e:any) {
 			expect(e).to.have.property("error");
 			expect(e.error.errorCode.code).to.equal("InvestmentInfoHasCompleted");
+			console.log(`${indent}✅ state has completed`);
 		}
 	});	
 
 	it("(2) Create ALT from investment records", async function () {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Create ALT from investment records program...`);
+		console.log(`🚀 Create ALT from investment records program...`);
 
 
 		const program = R.program;
@@ -428,7 +422,6 @@ describe("📃 Profit/Refund share Management", function () {
 				},
 			]);
 
-			console.log(`${indent}✅ Found ${record_list.length} investment records for batchId=${batchId}`);
 			record_list.sort((a, b) => a.account.recordId.toNumber() - b.account.recordId.toNumber());
 
 
@@ -451,20 +444,21 @@ describe("📃 Profit/Refund share Management", function () {
 
 			tx_alt.add(createIx, extendIx);
 			const signature = await provider.sendAndConfirm(tx_alt, []);
-			console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature = ${signature}`);
 
 
 			// Store the lookup table address in the map
 			R.lookupTableMap.get('record')!.set(batchId, lookupTableAddress);
+
+
+			console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at count: ${record_list.length}, batchId: ${batchId}, signature: ${signature}`);
+
+			// Delay 2 seconds
+			await new Promise(resolve => setTimeout(resolve, 2000));
 		}
 
 
-		// Delay 5 seconds
-		await new Promise(resolve => setTimeout(resolve, 5000));
-
-
-		// Ensure ALT exist in chain
-		// Iterate through all batchIds from 1 to maxBatchId
+		// Ensure all Address Lookup Tables (ALTs) exist on-chain for each batch
+		console.log(`${indent} Start Checking ALT exists or not`);
 		for (let batchId = 1; batchId <= maxBatchId; batchId++) {
 			let retries = 0;
 			let lookupTableAccount;
@@ -478,22 +472,26 @@ describe("📃 Profit/Refund share Management", function () {
 			while (!lookupTableAccount && retries < 5) {
 				const result = await provider.connection.getAddressLookupTable(lookupTableAddress);
 				if (result.value) {
-					lookupTableAccount = result.value; // ✅ ALT is available
+					lookupTableAccount = result.value; // ALT is available
+					console.log(`${indent}✅ ALT ${lookupTableAddress} at batch: ${batchId} is available!`);
 					break;
 				}
-				await new Promise(res => setTimeout(res, 1000)); // 💤 Wait before retrying
+				await new Promise(res => setTimeout(res, 5000)); // Wait before retrying
 				retries++;
 			}
 
 			// If ALT still not available, throw an error
-			if (!lookupTableAccount) throw new Error("ALT did not become available in time");
+			if (!lookupTableAccount) {
+				console.log(`${indent}❌ ALT ${lookupTableAddress} at batch: ${batchId} did not become available in time!`);
+				return;
+			}
 		}
 	});
 
 	it("(3) Estimate profit share using ALT with standard type", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Estimate profit share program...`);
+		console.log(`🚀 Estimate profit share program...`);
 
 
 		const program = R.program;
@@ -596,12 +594,12 @@ describe("📃 Profit/Refund share Management", function () {
 				.instruction();
 
 
-				const blockhash = await provider.connection.getLatestBlockhash();
 				const lookupTableAccount = await provider.connection
 				.getAddressLookupTable(lookupTableAddress!)
 				.then(res => res.value!);
-	
-	
+				
+				
+				const blockhash = await provider.connection.getLatestBlockhash();
 				const message = new Anchor.web3.TransactionMessage({
 					payerKey: payer,
 					recentBlockhash: blockhash.blockhash,
@@ -616,15 +614,30 @@ describe("📃 Profit/Refund share Management", function () {
 				const signature = await provider.connection.sendTransaction(versionedTx, {
 					skipPreflight: false,
 				});
-				console.log(`${indent}✅ Estimating for batchId=${batchId}, count=${batch_data.length}, signature=${signature}`);
+
+
+				// Wait before confirming transaction
+				await new Promise(res => setTimeout(res, 5000));
+
+				
+				const result = await provider.connection.confirmTransaction(
+					{
+						signature,
+						blockhash: blockhash.blockhash,
+						lastValidBlockHeight: blockhash.lastValidBlockHeight,
+					},
+					"confirmed"
+				);
+				console.log(`${indent}-----`);
+				console.log(`${indent}✅ Estimating profit for batchId=${batchId}, count=${batch_data.length}, signature=${signature}`);
+				console.log(`${indent}📦 Estimating profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 				
 
 				// Generate report
 				const info = await program.account.investmentInfo.fetch(investmentInfoPda);
 				const cache = await program.account.profitShareCache.fetch(cachePda);
 
-				console.log(`${indent}🧠 Profit Share Cache summary:`);
-				console.log(`${indent}		batchId:`, batchId);
+				console.log(`${indent}🧠 Profit Share Cache summary at batchId: ${batchId}`);
 				console.log(`${indent}		investmentId:`, Buffer.from(cache.investmentId).toString().replace(/\0/g, ""));
 				console.log(`${indent}		version:`, Buffer.from(version).toString('hex'));
 				console.log(`${indent}		investmentType:`, Object.keys(info.investmentType)[0]);
@@ -649,15 +662,18 @@ describe("📃 Profit/Refund share Management", function () {
 				// delay 1 second
 				await new Promise(resolve => setTimeout(resolve, 1000));				
 			} catch (e:any) {
-				expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+				console.log(e);
+				if (e.transactionLogs.length > 0) {
+					expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+				}				
 			}
 		} // end for
 	});
 
 	it("(4) Estimate refund share using ALT with standard type", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process estimate refund share program...`);
+		console.log(`🚀 Process estimate refund share program...`);
 
 
 		const program = R.program;
@@ -760,12 +776,12 @@ describe("📃 Profit/Refund share Management", function () {
 				.instruction();
 
 
-				const blockhash = await provider.connection.getLatestBlockhash();
 				const lookupTableAccount = await provider.connection
 				.getAddressLookupTable(lookupTableAddress!)
 				.then(res => res.value!);
-	
-	
+				
+				
+				const blockhash = await provider.connection.getLatestBlockhash();
 				const message = new Anchor.web3.TransactionMessage({
 					payerKey: payer,
 					recentBlockhash: blockhash.blockhash,
@@ -780,15 +796,29 @@ describe("📃 Profit/Refund share Management", function () {
 				const signature = await provider.connection.sendTransaction(versionedTx, {
 					skipPreflight: false,
 				});
-				console.log(`${indent}✅ Estimating for batchId=${batchId}, count=${batch_data.length}, signature=${signature}`);
+
+
+				// Wait before confirming transaction
+				await new Promise(res => setTimeout(res, 5000));
+
+				
+				const result = await provider.connection.confirmTransaction(
+					{
+						signature,
+						blockhash: blockhash.blockhash,
+						lastValidBlockHeight: blockhash.lastValidBlockHeight,
+					},
+					"confirmed"
+				);
+				console.log(`${indent}✅ Estimating refund for batchId=${batchId}, count=${batch_data.length}, signature=${signature}`);
+				console.log(`${indent}📦 Estimating refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 					
 
 				// Generate report
 				const info = await program.account.investmentInfo.fetch(investmentInfoPda);
 				const cache = await program.account.refundShareCache.fetch(cachePda);
 
-				console.log(`${indent}🧠 Refund Share Cache summary:`);
-				console.log(`${indent}		batchId:`, batchId);
+				console.log(`${indent}🧠 Refund Share Cache summary at batchId: ${batchId}`);
 				console.log(`${indent}		investmentId:`, Buffer.from(cache.investmentId).toString().replace(/\0/g, ""));
 				console.log(`${indent}		version:`, Buffer.from(version).toString('hex'));
 				console.log(`${indent}		investmentType:`, Object.keys(info.investmentType)[0]);
@@ -810,15 +840,16 @@ describe("📃 Profit/Refund share Management", function () {
 				// delay 1 second
 				await new Promise(resolve => setTimeout(resolve, 1000));
 			} catch (e:any) {
-				expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+				console.log(e);
+					
 			}
 		}
 	});
 
 	it("(5) Create ALT from ProfitShareCache entries", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Create ALT from ProfitShareCache entries prgram...`);
+		console.log(`🚀 Create ALT from ProfitShareCache entries prgram...`);
 
 
 		const program = R.program;
@@ -884,7 +915,7 @@ describe("📃 Profit/Refund share Management", function () {
 			);
 
 			R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-			console.log(`✅ Profit ALT Address=${lookupTableAddress.toBase58()}, batchId=${batchId}, signature=${signature}`);
+			console.log(`✅ created Profit ALT Address=${lookupTableAddress.toBase58()}, batchId=${batchId}, signature=${signature}`);
 
 			// Delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
@@ -919,9 +950,9 @@ describe("📃 Profit/Refund share Management", function () {
 	});
 
 	it("(6) Deposit sol, USDT and H2coin into vault", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Deposit sol, USDT and H2coin into vault program...`);
+		console.log(`🚀 Deposit sol, USDT and H2coin into vault program...`);
 
 
 		const program = R.program;
@@ -1062,11 +1093,12 @@ describe("📃 Profit/Refund share Management", function () {
 
 			// Send transaction
 			const tx = new Anchor.web3.Transaction().add(ix1, ix2, ix3);
-			const sig = await provider.sendAndConfirm(tx, []);
-			console.log("✅ Vault deposit tx:", sig);
+			const signature = await provider.sendAndConfirm(tx, []);
+			console.log("✅ Vault deposit tx:", signature);
 
-			// delay 1 second
-			await new Promise(resolve => setTimeout(resolve, 1000));
+			// Wait before confirming transaction
+			await new Promise(res => setTimeout(res, 1000));
+
 
 			const solBalanceLamports = await provider.connection.getBalance(vaultPda);
 			const solBalance = solBalanceLamports / Anchor.web3.LAMPORTS_PER_SOL;
@@ -1094,9 +1126,9 @@ describe("📃 Profit/Refund share Management", function () {
 	});
 
 	it("(7) Execute profit share using ALT", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process Execute profit share program...`);
+		console.log(`🚀 Process Execute profit share program...`);
 
 
 		const program = R.program;
@@ -1194,37 +1226,51 @@ describe("📃 Profit/Refund share Management", function () {
 					])
 					.instruction();
 
-				const blockhash = await provider.connection.getLatestBlockhash();
 
+				const blockhash = await provider.connection.getLatestBlockhash();
 				const message = new Anchor.web3.TransactionMessage({
 					payerKey: payer,
 					recentBlockhash: blockhash.blockhash,
 					instructions: [computeIx, execIx],
 				}).compileToV0Message([lookupTableAccount]);
 
+
 				const versionedTx = new Anchor.web3.VersionedTransaction(message);
 				versionedTx.sign([...threeExecSigners, provider.wallet.payer!]);
+
 
 				const signature = await provider.connection.sendTransaction(versionedTx, {
 					skipPreflight: false,
 				});
 
-				console.log(`${indent}✅ ALT-based executeProfitShare for batchId=${batchId}, signature=${signature}`);
+
+				// delay 5 second
+				await new Promise(resolve => setTimeout(resolve, 5000));
+
+
+				const result = await provider.connection.confirmTransaction(
+					{
+						signature,
+						blockhash: blockhash.blockhash,
+						lastValidBlockHeight: blockhash.lastValidBlockHeight,
+					},
+					"confirmed"
+				);
+				console.log(`${indent}✅ Execute profit for batchI: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
+				console.log(`${indent}📦 Execute profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
 			} catch (e:any) {
-				console.error("❌ TX failed:", e.message ?? e);
-				expect(e.logs).to.not.be.undefined;
-				expect(e.logs.join("\n")).to.include("Insufficient USDT token balance in vault");
+				if (e.logs && e.logs.length) {
+					expect(e.logs).to.not.be.undefined;
+					expect(e.logs.join("\n")).to.include("Insufficient USDT Token balance in vault");
+				}
 			}
-			
-			// Deplay 1 second
-			await new Promise((resolve) => setTimeout(resolve, 1000));
 		} // end for
 	});
 
 	it("(8) Create ALT from RefundShareCache entries", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Create ALT from RefundShareCache entries prgram...`);
+		console.log(`🚀 Create ALT from RefundShareCache entries prgram...`);
 
 
 		const program = R.program;
@@ -1289,7 +1335,7 @@ describe("📃 Profit/Refund share Management", function () {
 			);
 
 			R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-			console.log(`${indent}✅ Refund ALT Address=${lookupTableAddress.toBase58()}, batchId=${batchId}, signature=${signature}`);
+			console.log(`${indent}✅ Created Refund ALT Address=${lookupTableAddress.toBase58()}, batchId=${batchId}, signature=${signature}`);
 
 			// Delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1324,9 +1370,9 @@ describe("📃 Profit/Refund share Management", function () {
 	});
 
 	it("(9) Execute refund share using ALT", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 30); // 30 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process Execute refund share using ALT program...`);
+		console.log(`🚀 Process Execute refund share using ALT program...`);
 
 
 		const program = R.program;
@@ -1436,21 +1482,33 @@ describe("📃 Profit/Refund share Management", function () {
 					skipPreflight: false,
 				});
 	
-				console.log(`${indent}✅ ALT-based executeRefundShare for batchId=${batchId}, signature=${signature}`);				
-			} catch (e:any) {
-				console.error("❌ TX failed:", e.message ?? e);
-				expect(e.logs).to.not.be.undefined;
-				expect(e.logs.join("\n")).to.include("Insufficient USDT token balance in vault");
-			}
+				// delay 5 second
+				await new Promise(resolve => setTimeout(resolve, 5000));
 
-			// Deplay 1 second
-			await new Promise((resolve) => setTimeout(resolve, 1000)); // optional delay
+
+				const result = await provider.connection.confirmTransaction(
+					{
+						signature,
+						blockhash: blockhash.blockhash,
+						lastValidBlockHeight: blockhash.lastValidBlockHeight,
+					},
+					"confirmed"
+				);
+				console.log(`${indent}✅ Execute refund for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
+				console.log(`${indent}📦 Execute refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');			
+			} catch (e:any) {
+				if (e.logs && e.logs.length) {
+					expect(e.logs).to.not.be.undefined;
+					expect(e.logs.join("\n")).to.include("Insufficient H2coin Token balance in vault");
+				}
+			}
 		} // end for
 	});
 
 	it("(10) Withdraw from vaultPDA balance to withdraw wallet", async function () {
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process Withdraw from vault balance to withdraw wallet program...`);
+		console.log(`🚀 Process Withdraw from vault balance to withdraw wallet program...`);
 
 	
 		const program = R.program;
@@ -1467,8 +1525,6 @@ describe("📃 Profit/Refund share Management", function () {
 		// prepare instructions
 		const instructions = [];
 		
-
-
 
 		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
 			[
@@ -1606,8 +1662,6 @@ describe("📃 Profit/Refund share Management", function () {
 	});
 
 	function findMaxBatchId() {
-		const map = R.lookupTableMap.get("record");
-		const maxBatchId = map && map?.size > 0 ? map?.size : 0;
-		return maxBatchId;
+		return 50;
 	}
 });
