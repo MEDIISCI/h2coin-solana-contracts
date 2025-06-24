@@ -793,7 +793,6 @@ where
 {
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
-    let mint = &ctx.accounts.mint;
     let cache = &mut ctx.accounts.cache;
 
 
@@ -826,7 +825,6 @@ where
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
     require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
     require!(info.investment_type == InvestmentType::Standard, ErrorCode::StandardOnly);
-    require_keys_eq!(mint.key(), get_usdt_mint(), ErrorCode::InvalidTokenMint);
 
 
     // Validate signer
@@ -835,11 +833,11 @@ where
     let mut combined: HashSet<Pubkey> = info.execute_whitelist.iter().cloned().collect();
     combined.extend(info.update_whitelist.iter().cloned());
 
+
     require!(
         signer_keys.iter().any(|key| combined.contains(key)),
         ErrorCode::UnauthorizedSigner
     );
-
 
 
     // Check data accounts does not exceed 255
@@ -853,8 +851,8 @@ where
     // Mapping accounts to records and records
     let mut record_map = BTreeMap::new();
 
-    for (i, acc_info) in data_accounts.iter().enumerate() {
-        msg!("🟢 Trying to parse account[{}]: {}", i, acc_info.key());
+    for acc_info in data_accounts.iter() {
+        
         match Account::<InvestmentRecord>::try_from(acc_info) {
             Ok(record) => {
                 // Validate record PDA with info.investment_id
@@ -881,8 +879,7 @@ where
                 record_map.insert(record.record_id, record);
             }
             Err(e) => {
-                msg!("🟢 ❌ Failed to parse account[{}]: {}", i, acc_info.key());
-                msg!("🟢 Reason: {:?}", e);
+                msg!("🔴 Reason: {}, {:?}", acc_info.key(), e);
             }
         }
     }
@@ -891,6 +888,7 @@ where
         !record_map.is_empty() && record_map.len() <= MAX_ENTRIES_PER_BATCH,
         ErrorCode::TooManyRecordsLoaded
     );
+
 
     // Compute profit entries
     let mut entries: Vec<ProfitEntry> = Vec::new();
@@ -970,11 +968,14 @@ where
 }
 
 
-/// Estimates the refund share for a single batch_id in a specific refund year.
+/// Estimates the refund share for a single `batch_id` in a specific refund year.
 /// This uses the investment stage ratios to calculate H2COIN refunds per investor,
-/// storing the results in the RefundShareCache account.
-/// The result is stored in the on-chain `RefundShareCache` account.
-/// - `batch_id`: The target batch of records to estimate.
+/// storing the results in the `RefundShareCache` account.
+/// 
+/// - `batch_id`: The target batch of investment records to estimate.
+/// - `year_index`: The number of years passed since the refund period started (e.g., 0 = year 1, 1 = year 2, ...).
+/// 
+/// Refunds typically begin after a lock period (e.g., after year 3).
 pub fn estimate_refund_share<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, EstimateRefundShare<'info>>,
     batch_id: u16, 
@@ -985,12 +986,10 @@ where
 {
     let now = Clock::get()?.unix_timestamp;
     let info = &ctx.accounts.investment_info;
-    let cache = &mut ctx.accounts.cache;
-    let mint = &ctx.accounts.mint;
-    
+    let cache = &mut ctx.accounts.cache;    
 
 
-    // Validate the expected info vault PDA
+    // Validate the expected info PDA
     let (expected_info_pda, _bump) = Pubkey::find_program_address(
         &[
             b"investment",
@@ -1019,7 +1018,6 @@ where
     // Validate state
     require!(info.is_active, ErrorCode::InvestmentInfoDeactivated);
     require!(info.state == InvestmentState::Completed, ErrorCode::InvestmentInfoNotCompleted);
-    require_keys_eq!(mint.key(), get_hcoin_mint(), ErrorCode::InvalidTokenMint);
 
 
     // Validate signer
@@ -1027,6 +1025,7 @@ where
     let signer_keys = extract_signer_keys(signer_infos);
     let mut combined: HashSet<Pubkey> = info.execute_whitelist.iter().cloned().collect();
     combined.extend(info.update_whitelist.iter().cloned());
+
 
     require!(
         signer_keys.iter().any(|key| combined.contains(key)),
@@ -1036,7 +1035,6 @@ where
     
     // Check data accounts does not exceed 25
     let data_accounts = &ctx.remaining_accounts[1..];
-    msg!("🟢 Total accounts received: {}", data_accounts.len());
     require!(
         data_accounts.len() <= MAX_ENTRIES_PER_BATCH,
         ErrorCode::TooManyRecordsLoaded
@@ -1046,9 +1044,8 @@ where
     // Mapping accounts to records and records
     let mut record_map = BTreeMap::new();
 
-    for (i, acc_info) in data_accounts.iter().enumerate() {
+    for acc_info in data_accounts.iter() {
         
-        msg!("🟢 Trying to parse account[{}]: {}", i, acc_info.key());
         match Account::<InvestmentRecord>::try_from(acc_info) {
             Ok(record) => {
                 // Validate record PDA with info.investment_id
@@ -1075,8 +1072,7 @@ where
                 record_map.insert(record.record_id, record);
             }
             Err(e) => {
-                msg!("❌ Failed to parse account[{}]: {}", i, acc_info.key());
-                msg!("🟢 Reason: {:?}", e);
+                msg!("🔴 Reason: {}, {:?}", acc_info.key(), e);
             }
         }
     }
@@ -1206,7 +1202,6 @@ where
     let vault = &ctx.accounts.vault;
     let vault_token_account = &ctx.accounts.vault_token_account;
 
-    
 
     // Validate the expected info vault PDA
     let (expected_info_pda, _bump) = Pubkey::find_program_address(
@@ -1319,14 +1314,6 @@ where
                 total_transferred = total_transferred
                 .checked_add(entry.amount_usdt)
                 .ok_or(ErrorCode::NumericalOverflow)?;
-
-                emit!(ProfitPaidEvent {
-                    investment_id: info.investment_id,
-                    version: info.version,
-                    to: recipient,
-                    amount_usdt: entry.amount_usdt,
-                    pay_at: now,
-                });
             }
             Err(_e) => {
                 failures.push(recipient);
@@ -1378,8 +1365,6 @@ where
     let vault = &ctx.accounts.vault;
     let vault_token_account = &ctx.accounts.vault_token_account;
     let mint = &ctx.accounts.mint;
-
-
 
     
     // Validate the expected info vault PDA
@@ -1499,14 +1484,6 @@ where
                 total_transferred = total_transferred
                 .checked_add(entry.amount_hcoin)
                 .ok_or(ErrorCode::NumericalOverflow)?;
-
-                emit!(RefundPaidEvent {
-                    investment_id: info.investment_id,
-                    version: info.version,  
-                    to: entry.wallet,
-                    amount_hcoin: entry.amount_hcoin,
-                    pay_at: now,
-                });
             }
             Err(_e) => {
                 failures.push(recipient);
@@ -1666,7 +1643,6 @@ pub fn deposit_token_to_vault(ctx: Context<DepositTokenToVault>, amount: u64) ->
 
 
 
-
 /// Withdraws remaining SOL, USDT, and H2COIN from the vault PDA to the withdraw wallet.
 /// Requires 'completed' and 'active' state
 /// Requires 3-of-5 execute whitelist signatures.
@@ -1684,13 +1660,12 @@ where
 
     let vault = &ctx.accounts.vault;
     let vault_usdt_account = &ctx.accounts.vault_usdt_account;
-    let vault_hcoin_account = &ctx.accounts.vault_usdt_account;
+    let vault_hcoin_account = &ctx.accounts.vault_hcoin_account;
 
     
     let recipient_account = &ctx.accounts.recipient_account;
     let recipient_usdt_account = &ctx.accounts.recipient_usdt_account;
     let recipient_hcoin_account = &ctx.accounts.recipient_hcoin_account;
-
 
 
     // reject if investment info has been deactived or has not been completed
@@ -1728,7 +1703,6 @@ where
     // Check recipient is on withdraw whitelist
     require!(!info.withdraw_whitelist.is_empty(), ErrorCode::EmptyWhitelist);
     require!(info.withdraw_whitelist.contains(&recipient_account.key()), ErrorCode::UnauthorizedRecipient);
-
 
 
     // Transfer USDT if balance > 0 and vault ATA owner is correct
@@ -1784,14 +1758,12 @@ where
             ctx.accounts.system_program.to_account_info(),
             Transfer {
                 from: vault.to_account_info(),
-                to: vault.to_account_info(),
+                to: recipient_account.to_account_info(),
             },
             signer,
         );
 
         system_program::transfer(cpi_ctx, withdraw_lamports)?;
-
-        msg!("🟢 Transferred {} lamports from vault to recipient", withdraw_lamports);
     } else {
         msg!("🟡 No withdrawable SOL (rent-exempt only), skip transfer.");
     }

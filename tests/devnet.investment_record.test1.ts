@@ -3,9 +3,9 @@ import { describe, it } from "mocha";
 import bs58 from "bs58";
 import TrimId from "trimid";
 import * as Anchor from "@coral-xyz/anchor";
-import { ComputeBudgetProgram, PublicKey, Keypair,
+import { 
+	ComputeBudgetProgram, PublicKey, Keypair,
 	AddressLookupTableProgram,
-	AddressLookupTableAccount
 } from "@solana/web3.js";
 import { 
 	ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, ACCOUNT_SIZE,
@@ -25,8 +25,8 @@ describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcpa22";
-	const __version = "3e2ea000";
+	const __investmentId = "02SEHzIZfBcp222";
+	const __version = "3e2ea001";
 
 
 	const batchId = 1;
@@ -45,9 +45,9 @@ describe("Investment Record management", async () => {
 
 
 	before("Initialize investment info with CSR type", async function() {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Initialize invesgtment info with CSR type program...`);
+		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -175,6 +175,10 @@ describe("Investment Record management", async () => {
 			investmentType: Object.keys(investmentInfo.investmentType)[0],
 			stageRatio: investmentInfo.stageRatio.toString(),
 			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
+			executeWhitelist: investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()),
+			updateWhitelist: investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()),
+			withdrawWhitelist: investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()),
+			state: Object.keys(investmentInfo.state)[0],
 			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
 			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
 			vaultPda: investmentInfo.vault.toBase58(),
@@ -187,7 +191,7 @@ describe("Investment Record management", async () => {
 	it('(0) adds new investment records (batch mode)', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Adding investment records program ...`);
+		console.log(`${indent}📃 Adding investment records program ...`);
 
 
 		const program = R.program;
@@ -231,12 +235,14 @@ describe("Investment Record management", async () => {
 
 		
 		let total_invest_usdt = 0;
+		const record_info:PublicKey[] = [];
+
 
 		for (let start = 1; start <= MAX_ENTRIES_PER_BATCH; start += MAX_RECORDS_PER_TX) {
 			let tx = new Anchor.web3.Transaction();
 
 			for (let offset = 0; offset < MAX_RECORDS_PER_TX && (start + offset) <= MAX_ENTRIES_PER_BATCH; offset++) {
-				const index = start + offset;
+				const index = start*100 + offset;
 
 				// Generate investment record
 				const recordId = new Anchor.BN(index);
@@ -253,10 +259,10 @@ describe("Investment Record management", async () => {
 				const [recordPda] = Anchor.web3.PublicKey.findProgramAddressSync(
 					[
 						Buffer.from("record"),
-						Buffer.from(investmentId),
-						Buffer.from(version),
+						Buffer.from(investmentId),                    	// 15 bytes
+						Buffer.from(version),							// 4 bytes
 						batchIdBytes,
-						recordId.toArrayLike(Buffer, "le", 8),
+						recordId.toArrayLike(Buffer, "le", 8),        // 8 bytes 
 						Buffer.from(accountIdBytes)
 					],
 					program.programId
@@ -305,6 +311,7 @@ describe("Investment Record management", async () => {
 					.instruction();
 
 				tx.add(ix);
+				record_info.push(recordPda);
 			} // end for offset
 
 			try {
@@ -324,7 +331,7 @@ describe("Investment Record management", async () => {
 			}
 		}
 
-		// ✅ 驗證
+	
 		try {
 			const result1 = await program.account.investmentRecord.all([
 				{
@@ -365,7 +372,7 @@ describe("Investment Record management", async () => {
 			]);
 			expect(result2.length).to.be.greaterThan(0);
 
-			console.log(`${indent}🔍  Add investment record result:`, {
+			console.log(`${indent}✅ Add investment record result:`, {
 				batchId,
 				total_invest_usdt,
 				total_record_by_batchId: result2.length,
@@ -379,7 +386,7 @@ describe("Investment Record management", async () => {
 	it('(1) Update investment record wallet base on accont_id', async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Update investment record wallet base on accont_id program ...`);
+		console.log(`${indent}📃 Update investment record wallet base on accont_id program ...`);
 		
 
 		const program = R.program;
@@ -527,9 +534,9 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(2) Revoke investment record", async function() {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Revoke investment record program...`);
+		console.log(`${indent}📃 Revoke investment record program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -634,7 +641,6 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(3) Set investment state to complete", async function() {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}Set investment state to complete...`);
 
@@ -673,7 +679,7 @@ describe("Investment Record management", async () => {
 	it('(4) Update investment record wallet again', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Update investment record wallet again program ...`);
+		console.log(`${indent}📃 Update investment record wallet again program ...`);
 
 
 		const program = R.program;
@@ -823,7 +829,7 @@ describe("Investment Record management", async () => {
 	it("(5) Create ALT from investment records", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Create ALT from investment records program...`);
+		console.log(`${indent}📃 Create ALT from investment records program...`);
 
 
 		const program = R.program;
@@ -894,9 +900,9 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(6) Estimate profit share using ALT with csr type", async function () {
-		this.timeout(1000 * 60 * 5); // 5 minutes timeout
+		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Estimate profit share using ALT with csr type program...`);
+		console.log(`${indent}📃 Estimate profit share using ALT with csr type program...`);
 		
 
 		const program = R.program;

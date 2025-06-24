@@ -348,8 +348,6 @@ pub struct EstimateProfitShare<'info> {
     pub cache: Account<'info, ProfitShareCache>,
 
 
-    pub mint: Account<'info, Mint>,
-
     // The payer is the one who pays for the transaction fees
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -389,8 +387,6 @@ pub struct EstimateRefundShare<'info> {
         bump,
     )]
     pub cache: Account<'info, RefundShareCache>,
-
-    pub mint: Account<'info, Mint>,
     
     // The payer is the one who pays for the transaction fees
     #[account(mut)]

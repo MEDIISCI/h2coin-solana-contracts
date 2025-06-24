@@ -204,27 +204,6 @@ pub struct RefundShareExecuted {
     pub signers: Vec<Pubkey>,
 }
 
-#[event]
-pub struct ProfitPaidEvent {
-    pub investment_id: [u8; 15],
-    pub version: [u8; 4],
-    pub to: Pubkey,
-    pub amount_usdt: u64,
-    // UNIX timestamp
-    pub pay_at: i64,
-}
-
-#[event]
-pub struct RefundPaidEvent {
-    pub investment_id: [u8; 15],
-    pub version: [u8; 4],
-    pub to: Pubkey,
-    pub amount_hcoin: u64,
-    // UNIX timestamp
-    pub pay_at: i64,
-}
-
-
 
 #[event]
 pub struct VaultDepositSolEvent {

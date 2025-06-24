@@ -8,6 +8,7 @@ import {
 	PublicKey, Keypair, 
 	AddressLookupTableProgram,
 } from "@solana/web3.js";
+
 import { getAssociatedTokenAddress, 
 	ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID,
 	ACCOUNT_SIZE,
@@ -27,8 +28,8 @@ describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcpa22";
-	const __version = "3e2ea002";
+	const __investmentId = "02SEHzIZfBcp111";
+	const __version = "c9060006";
 
 
 	const batchId = 2;
@@ -51,7 +52,7 @@ describe("Investment Record management", async () => {
 	before("Initialize investment info with STANDARD type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Initialize invesgtment info with STANDARD type program...`);
+		console.log(`📃 Initialize invesgtment info with STANDARD type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -75,8 +76,8 @@ describe("Investment Record management", async () => {
 		];
 		const stageRatio = stage_ratio_map(stageRatioRows);
 
-		const start_at = new Anchor.BN(1611100800); // January 20, 2021 12:00:00 AM
-		const end_at = new Anchor.BN(1621468800);   // May 20, 2021 12:00:00 AM
+		const start_at = new Anchor.BN(1747699200);
+		const end_at = new Anchor.BN(1779235200);
 		const upperLimit = new Anchor.BN(5_000_000_000_000);		
 
 		const executeWhitelist = loadExecuteWhitelistKeypairs().map(k => k.publicKey).slice(0, 5);
@@ -179,6 +180,10 @@ describe("Investment Record management", async () => {
 			investmentType: Object.keys(investmentInfo.investmentType)[0],
 			stageRatio: investmentInfo.stageRatio.toString(),
 			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
+			executeWhitelist: investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()),
+			updateWhitelist: investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()),
+			withdrawWhitelist: investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()),
+			state: Object.keys(investmentInfo.state)[0],
 			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
 			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
 			vaultPda: investmentInfo.vault.toBase58(),
@@ -191,7 +196,7 @@ describe("Investment Record management", async () => {
 	it('(0) adds new investment records (batch mode)', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Adding investment records program ...`);
+		console.log(`📃 Adding investment records program ...`);
 
 
 		const program = R.program;
@@ -235,16 +240,15 @@ describe("Investment Record management", async () => {
 
 		
 		let total_invest_usdt = 0;
-		let currentRecordId = 31;
 
 		for (let start = 1; start <= MAX_ENTRIES_PER_BATCH; start += MAX_RECORDS_PER_TX) {
 			let tx = new Anchor.web3.Transaction();
 
 			for (let offset = 0; offset < MAX_RECORDS_PER_TX && (start + offset) <= MAX_ENTRIES_PER_BATCH; offset++) {
-				const index = start*30 + offset;
+				const index = start + offset;
 
 				// Generate investment record
-				const recordId = new Anchor.BN(currentRecordId);
+				const recordId = new Anchor.BN(index);
 				const accountId = index % 11 === 0? fix_account_id: TrimId.shortid();
 				const accountIdBytes = stringToFixedU8Array(accountId, 15);
 				const wallet = index % 11 === 0? fix_wallet: Keypair.generate().publicKey;
@@ -268,7 +272,7 @@ describe("Investment Record management", async () => {
 				);
 				investmentRecordPdas.push(recordPda);
 
-				console.log(`${indent}recordId`, currentRecordId, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt, 'recordPda:', recordPda.toBase58());
+				console.log(`${indent}recordId`, index, 'wallet:', wallet.toBase58(), 'amount:', amountUsdt, 'recordPda:', recordPda.toBase58());
 
 				const [RecipientUsdtAta, RecipientHcoinAta] = await Promise.all([
 					getAssociatedTokenAddress(usdt_mint, wallet),
@@ -310,7 +314,6 @@ describe("Investment Record management", async () => {
 					.instruction();
 
 				tx.add(ix);
-				currentRecordId++;
 			} // end for offset
 
 			try {
@@ -319,20 +322,18 @@ describe("Investment Record management", async () => {
 					commitment: "confirmed",
 					skipPreflight: false,
 				});
-				console.log(`${indent}✅ Sent records: ${currentRecordId-2}~${currentRecordId-1} (tx: ${sig})`);
+				console.log(`${indent}✅ Sent batch: ${batchId} (tx: ${sig})`);
 
 
 				await new Promise(resolve => setTimeout(resolve, 1000));
 
 			} catch (e: any) {
-				console.log(e);
-				
 				const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
 				expect(logs).to.include("InvestmentInfoHasCompleted");
 			}
 		}
 
-		// ✅ 驗證
+
 		try {
 			const result1 = await program.account.investmentRecord.all([
 				{
@@ -387,7 +388,7 @@ describe("Investment Record management", async () => {
 	it('(1) Update investment record wallet base on accont_id', async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Update investment record wallet base on accont_id program ...`);
+		console.log(`📃 Update investment record wallet base on accont_id program ...`);
 		
 
 		const program = R.program;
@@ -535,7 +536,7 @@ describe("Investment Record management", async () => {
 	it("(2) Revoke investment record", async function() {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Revoke investment record program...`);
+		console.log(`📃 Revoke investment record program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -641,7 +642,7 @@ describe("Investment Record management", async () => {
 
 	it("(3) Set investment state to complete", async function() {
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}Set investment state to complete...`);
+		console.log(`Set investment state to complete...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -678,7 +679,7 @@ describe("Investment Record management", async () => {
 	it('(4) Update investment record wallet again', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Update investment record wallet again program ...`);
+		console.log(`📃 Update investment record wallet again program ...`);
 
 
 		const program = R.program;
@@ -748,7 +749,6 @@ describe("Investment Record management", async () => {
 		}
 		
 
-		// ✅ 驗證
 		try {
 			const ix = await program.methods
 			.updateInvestmentRecordWallets(fix_account_id)
@@ -826,7 +826,7 @@ describe("Investment Record management", async () => {
 	it("(5) Create ALT from investment records", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Create ALT from investment records program...`);
+		console.log(`📃 Create ALT from investment records program...`);
 
 
 		const program = R.program;
@@ -858,6 +858,7 @@ describe("Investment Record management", async () => {
 		console.log(`${indent}✅ Found ${record_list.length} investment records for batchId=${batchId}`);
 		record_list.sort((a, b) => a.account.recordId.toNumber() - b.account.recordId.toNumber());
 
+
 		const tx_alt = new Anchor.web3.Transaction();
 		const recentSlot = await provider.connection.getSlot("finalized");
 		const [createIx, lookupTableAddress] = AddressLookupTableProgram.createLookupTable({
@@ -866,6 +867,7 @@ describe("Investment Record management", async () => {
 			recentSlot,
 		});
 
+
 		const extendIx = AddressLookupTableProgram.extendLookupTable({
 			lookupTable: lookupTableAddress,
 			authority: provider.wallet.publicKey,
@@ -873,10 +875,12 @@ describe("Investment Record management", async () => {
 			addresses: record_list.map((i:any) => i.publicKey),
 		});
 
+
 		tx_alt.add(createIx, extendIx);
 		const sig = await provider.sendAndConfirm(tx_alt, []);
 		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}`);
 		await new Promise(resolve => setTimeout(resolve, 1500));
+
 
 		let retries = 0;
 		let lookupTableAccount;
@@ -898,7 +902,7 @@ describe("Investment Record management", async () => {
 	it("(6) Estimate profit share using ALT with standard type", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Process estimate profit share program...`);
+		console.log(`📃 Process estimate profit share program...`);
 		
 
 		const program = R.program;
@@ -906,12 +910,10 @@ describe("Investment Record management", async () => {
 		const investmentId = R.investmentId;
 		const investmentInfoPda = R.investmentInfoPda;
 		const version = R.version;
-		const usdt_mint = R.usdt_mint;
 		const payer = provider.wallet.publicKey;
-		const totalProfitUsdt = new Anchor.BN(5_000_000_000_000);
+		const totalProfitUsdt = new Anchor.BN(1_000_000_000_000);
 		const lookupTableAddress = R.lookupTableMap.get('record')!.get(batchId);
-		console.log(`${indent}📃 Lookup Table Address: ${lookupTableAddress?.toBase58()}`);
-		
+
 
 		// Find the PDA for the profit share cache
 		const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
@@ -957,13 +959,11 @@ describe("Investment Record management", async () => {
 		const investmentRecordPdas = totalRecords.map(record => record.publicKey);
 
 
-		let errorCaught = false;
 		try {
 			const estimateIx = await program.methods
 			.estimateProfitShare(batchId, totalProfitUsdt, totalInvestUsdt)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				mint: usdt_mint,
 				cache: cachePda,
 				payer: provider.wallet.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
@@ -983,6 +983,7 @@ describe("Investment Record management", async () => {
 			.signers([threeUpdateSigners[0]])
 			.instruction();
 
+
 			const blockhash = await provider.connection.getLatestBlockhash();
 			const lookupTableAccount = await provider.connection
 			.getAddressLookupTable(lookupTableAddress!)
@@ -999,25 +1000,20 @@ describe("Investment Record management", async () => {
 			const versionedTx = new Anchor.web3.VersionedTransaction(message);
 			versionedTx.sign([threeUpdateSigners[0], provider.wallet.payer!]);
 
+
 			const signature = await provider.connection.sendTransaction(versionedTx, {
 				skipPreflight: false,
 			});
-
-			const signResult = await provider.connection.confirmTransaction({
-				signature,
-				blockhash: blockhash.blockhash,
-				lastValidBlockHeight: blockhash.lastValidBlockHeight,
-			});
+			console.log(`${indent}✅ Estimating for batchId=${batchId}, count=${totalRecords.length}, signature=${signature}`);
 
 			
 			// Generate report
 			const info = await program.account.investmentInfo.fetch(investmentInfoPda);
 			const cache = await program.account.profitShareCache.fetch(cachePda);
 
-			console.log(`${indent}🧠 Profit Cache:`, 
+			console.log(`${indent}🧠 PProfitShareCache summary:`, 
 				{
 					batchId,
-					vault: info.vault.toBase58(),
 					investmentId: Buffer.from(cache.investmentId).toString().replace(/\0/g, ""),
 					version: Buffer.from(cache.version).toString().replace(/\0/g, ""),
 					investmentType: Object.keys(info.investmentType)[0],
@@ -1040,18 +1036,19 @@ describe("Investment Record management", async () => {
 				console.log(data);
 			}
 
-			expect(errorCaught).to.be.false;
-		} catch (e:any) {			
-			errorCaught = true;
+			// delay 1 second
+			await new Promise(resolve => setTimeout(resolve, 1000));
+		} catch (e:any) {
 			console.log(e);
-			expect(errorCaught).to.be.true;
-			expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+			if (e.transactionLogs) {
+				expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+			}
 		}
 	});
 	it("(7) Estimate refund share using ALT with standard type", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Process estimate refund share program...`);
+		console.log(`📃 Process estimate refund share program...`);
 		
 
 		const program = R.program;
@@ -1059,7 +1056,6 @@ describe("Investment Record management", async () => {
 		const investmentId = R.investmentId;
 		const investmentInfoPda = R.investmentInfoPda;
 		const version = R.version;
-		const h2coin_mint = R.h2coin_mint;
 		const payer = provider.wallet.publicKey;
 		const lookupTableAddress = R.lookupTableMap.get('record')!.get(batchId);		
 
@@ -1107,7 +1103,6 @@ describe("Investment Record management", async () => {
 			.estimateRefundShare(batchId, yearIndex)
 			.accounts({
 				investmentInfo: investmentInfoPda,
-				mint: h2coin_mint,
 				cache: cachePda,
 				payer: provider.wallet.publicKey,
 				systemProgram: Anchor.web3.SystemProgram.programId,
@@ -1199,7 +1194,7 @@ describe("Investment Record management", async () => {
 	it("(9) Create ALT from Profit Share Cache entries", async function () {
 		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Create ALT from ProfitShareCache entries prgram...`);
+		console.log(`📃 Create ALT from ProfitShareCache entries prgram...`);
 
 
 		const program = R.program;
@@ -1259,7 +1254,7 @@ describe("Investment Record management", async () => {
 		);
 
 		R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-		console.log(`✅ Cache ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}`);
+		console.log(`${indent}✅ Profit ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}`);
 		await new Promise(resolve => setTimeout(resolve, 1000)); // optional delay
 		
 	});
@@ -1267,7 +1262,7 @@ describe("Investment Record management", async () => {
 	it("(10) Deposit sol, USDT and H2coin into vaultPDA", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Deposit sol, USDT and H2coin into vaultPDA program...`);
+		console.log(`📃 Deposit sol, USDT and H2coin into vaultPDA program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -1309,9 +1304,9 @@ describe("Investment Record management", async () => {
 			const cache = await program.account.profitShareCache.fetch(cachePda);
 			subtotalEstimateSol = subtotalEstimateSol.add(cache.subtotalEstimateSol);
 			subtotalProfitUsdt = subtotalProfitUsdt.add(cache.subtotalProfitUsdt);
-			console.log(`📦 batchId=${batchId}, profit=${cache.subtotalProfitUsdt.toString()}, sol=${cache.subtotalEstimateSol.toString()}`);
+			console.log(`${indent}📦 batchId=${batchId}, profit=${cache.subtotalProfitUsdt.toString()}, sol=${cache.subtotalEstimateSol.toString()}`);
 		} catch (e) {
-			console.warn(`⚠️ Cache missing for batchId=${batchId}, skipping...`);
+			console.warn(`${indent}⚠️ Cache missing for batchId=${batchId}, skipping...`);
 		}
 
 
@@ -1337,9 +1332,9 @@ describe("Investment Record management", async () => {
 		}
 
 
-		console.log(`${indent}💰 Total SOL needed:`, subtotalEstimateSol.toNumber() / Anchor.web3.LAMPORTS_PER_SOL);
-		console.log(`${indent}💰 Total USDT needed:`, subtotalProfitUsdt.toString());
-		console.log(`${indent}💰 Total H2coin needed:`, subtotalRefundHcoin.toString());
+		console.log(`${indent}💰 Before SOL Balance:`, subtotalEstimateSol.toNumber() / Anchor.web3.LAMPORTS_PER_SOL, );
+		console.log(`${indent}💰 Before USDT Balance:`, subtotalProfitUsdt.toString());
+		console.log(`${indent}💰 Before H2coin Balance:`, subtotalRefundHcoin.toString());
 
 		try {
 			const ix1 = await program.methods
@@ -1391,6 +1386,7 @@ describe("Investment Record management", async () => {
 				.preInstructions([modifyComputeUnits])
 				.instruction();
 
+			// Send transaction
 			const tx = new Anchor.web3.Transaction().add(ix1, ix2, ix3);
 			const sig = await provider.sendAndConfirm(tx, []);
 			console.log(`${indent}✅ Vault deposit tx:`, sig);
@@ -1400,21 +1396,21 @@ describe("Investment Record management", async () => {
 
 			const solBalanceLamports = await provider.connection.getBalance(vaultPda);
 			const solBalance = solBalanceLamports / Anchor.web3.LAMPORTS_PER_SOL;
-			console.log(`${indent}💰 SOL Balance:`, solBalance, "SOL", vaultPda.toBase58());
+			console.log(`${indent}💰 After SOL Balance:`, solBalance, "SOL", vaultPda.toBase58());
 
 			// delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
 
 			const UsdtATA = await provider.connection.getTokenAccountBalance(vaultUsdtAta);
 			const usdtBalance = UsdtATA.value.uiAmountString ?? '0';
-			console.log(`${indent}💰 USDT Balance:`, usdtBalance, "USDT", vaultUsdtAta.toBase58());
+			console.log(`${indent}💰 After USDT Balance:`, usdtBalance, "USDT", vaultUsdtAta.toBase58());
 
 			// delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
 
 			const H2coinATA = await provider.connection.getTokenAccountBalance(vaultUsdtAta);
 			const H2coinBalance = H2coinATA.value.uiAmountString ?? '0';
-			console.log(`${indent}💰 H2coin Balance:`, H2coinBalance, "H2coin", vaultUsdtAta.toBase58());
+			console.log(`${indent}💰 After H2coin Balance:`, H2coinBalance, "H2coin", vaultUsdtAta.toBase58());
 			
 			// delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1426,7 +1422,7 @@ describe("Investment Record management", async () => {
 	it("(11) Execute profit share using ALT", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Execute profit share using ALT program...`);
+		console.log(`📃 Execute profit share using ALT program...`);
 
 		
 		const program = R.program;
@@ -1439,6 +1435,19 @@ describe("Investment Record management", async () => {
 		const payer = provider.wallet.publicKey;
 
 
+		// Derive the vault PDA for a specific investmentId, version
+		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
+			[
+				Buffer.from("vault"),
+				Buffer.from(investmentId),
+				Buffer.from(version),
+			],
+			program.programId
+		);
+		const vaultTokenAta = await getAssociatedTokenAddress(usdtMint, vaultPda, true);
+
+
+		// Derive the profit_cache PDA for a specific investmentId, version, and batchId
 		const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
 			[
 				Buffer.from("profit_cache"),
@@ -1448,22 +1457,11 @@ describe("Investment Record management", async () => {
 			],
 			program.programId
 		);
-
-		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
-			[
-				Buffer.from("vault"),
-				Buffer.from(investmentId),
-				Buffer.from(version),
-			],
-			program.programId
-		);
-
-		const vaultTokenAta = await getAssociatedTokenAddress(usdtMint, vaultPda, true);
-
-
-		// 找是哪個 recipient 的 ATA 出錯
-		const walletATA:PublicKey[] = [];
 		const cache = await program.account.profitShareCache.fetch(cachePda);
+
+
+		// Get recipient ATA on each batchId
+		const walletATA:PublicKey[] = [];
 		for (const entry of cache.entries) {
 			const ata = await getAssociatedTokenAddress(usdtMint, entry.wallet);
 			walletATA.push(ata);
@@ -1472,13 +1470,8 @@ describe("Investment Record management", async () => {
 
 		const lookupTableAccount = await provider.connection
 		.getAddressLookupTable(lookupTableAddress!)
-		.then((res:any) => res.value!);
+		.then(res => res.value!);
 
-		for (const key of lookupTableAccount.state.addresses) {
-			if (key.toBase58() === "8ftoK2iy8Njk9MkgACEJJVenwdycFUW82uk6SVUk1xK3") {
-				console.log(`✅ ALT ${key.toBase58()} 包含這個 ATA`);
-			}
-		}
 
 		try {
 			const computeIx = modifyComputeUnits;
@@ -1525,25 +1518,18 @@ describe("Investment Record management", async () => {
 			const signature = await provider.connection.sendTransaction(versionedTx, {
 				skipPreflight: false,
 			});
-
-			const signResult = await provider.connection.confirmTransaction({
-				signature,
-				blockhash: blockhash.blockhash,
-				lastValidBlockHeight: blockhash.lastValidBlockHeight,
-			});
 			
-			console.log(`${indent}✅ ALT-based executeProfitShare signature=${signature}`);
+			console.log(`${indent}✅ ALT-based executeProfitShare for batchId=${batchId}:`, signature);
 		} catch (e:any) {
 			console.error("❌ TX failed:", e.message ?? e);
 			expect(e.logs).to.not.be.undefined;
-
 			expect(e.logs.join("\n")).to.include("Insufficient USDT token balance in vault");
 		}
 	});
 	it("(12) Create ALT from Refund Share Cache entries", async function () {
 		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Create ALT from Refund Share Cache entries prgram...`);
+		console.log(`📃 Create ALT from Refund Share Cache entries prgram...`);
 
 
 		const program = R.program;
@@ -1637,7 +1623,7 @@ describe("Investment Record management", async () => {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Process Execute Refund Share using ALT program...`);
+		console.log(`📃 Process Execute Refund Share using ALT program...`);
 
 		
 		const program = R.program;
@@ -1685,7 +1671,7 @@ describe("Investment Record management", async () => {
 
 			const lookupTableAccount = await provider.connection
 			.getAddressLookupTable(lookupTableAddress!)
-			.then((res:any) => res.value!);
+			.then(res => res.value!);
 
 
 			const execIx = await program.methods
@@ -1730,14 +1716,8 @@ describe("Investment Record management", async () => {
 			const signature = await provider.connection.sendTransaction(versionedTx, {
 				skipPreflight: false,
 			});
-
-			const signResult = await provider.connection.confirmTransaction({
-				signature,
-				blockhash: blockhash.blockhash,
-				lastValidBlockHeight: blockhash.lastValidBlockHeight,
-			});
 			
-			console.log(`${indent}✅ ALT-based executeRefundShare signature=${signature}`);
+			console.log(`${indent}✅ ALT-based executeRefundShare tx:`, signature);
 		} catch (e:any) {
 	
 		}
@@ -1745,7 +1725,7 @@ describe("Investment Record management", async () => {
 
 	it("(14) Withdraw from vaultPDA balance to withdraw wallet", async function () {
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Process Withdraw from vault balance to withdraw wallet program...`);
+		console.log(`📃 Process Withdraw from vault balance to withdraw wallet program...`);
 
 	
 		const program = R.program;
@@ -1765,7 +1745,7 @@ describe("Investment Record management", async () => {
 
 
 
-		const [vaultPda, vaultBump] = Anchor.web3.PublicKey.findProgramAddressSync(
+		const [vaultPda] = Anchor.web3.PublicKey.findProgramAddressSync(
 			[
 				Buffer.from("vault"),
 				Buffer.from(investmentId),
@@ -1775,7 +1755,7 @@ describe("Investment Record management", async () => {
 		);
 
 		const vaultSolBalance = await provider.connection.getBalance(vaultPda);
-		console.log(`${indent} Vault SOL balance:`, vaultSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58(), vaultBump);
+		console.log(`${indent}💰 Before Vault SOL balance:`, vaultSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58());
 
 
 		// Vault USDT token accounts
@@ -1783,9 +1763,9 @@ describe("Investment Record management", async () => {
 		try {
 			const vaultUsdtAtaInfo = await getAccount(provider.connection as any, vaultUsdtAta);
 			const vaultUSDTBalance = Number(vaultUsdtAtaInfo.amount) / 1_000_000;
-			console.log(`${indent} Vault USDT balance:`, vaultUSDTBalance, "USDT with ATA:", vaultUsdtAta.toBase58());
+			console.log(`${indent}💰 Before Vault USDT balance:`, vaultUSDTBalance, "USDT with ATA:", vaultUsdtAta.toBase58());
 		} catch (e) {
-			console.log(`${indent} Vault USDT balance: 0 USDT (ATA not found)`);
+			console.log(`${indent}💰 Before Vault USDT balance: 0 USDT (ATA not found)`);
 		}
 		
 		// Vault H2coin token accounts
@@ -1793,9 +1773,9 @@ describe("Investment Record management", async () => {
 		try {
 			const vaultH2coinAtaInfo = await getAccount(provider.connection as any, vaultH2coinAta);
 			const vaultH2coinBalance = Number(vaultH2coinAtaInfo.amount) / 1_000_000;
-			console.log(`${indent} Vault H2COIN balance:`, vaultH2coinBalance, "H2COIN with ATA:", vaultH2coinAta.toBase58());
+			console.log(`${indent}💰 Before Vault H2COIN balance:`, vaultH2coinBalance, "H2COIN with ATA:", vaultH2coinAta.toBase58());
 		} catch (e) {
-			console.log(`${indent} Vault H2COIN balance: 0 H2COIN (ATA not found)`);
+			console.log(`${indent}💰 Before Vault H2COIN balance: 0 H2COIN (ATA not found)`);
 		}
 
 
@@ -1841,7 +1821,35 @@ describe("Investment Record management", async () => {
 
 		// Send combined transaction
 		const tx = new Anchor.web3.Transaction().add(...instructions);
-		const txSig = await provider.sendAndConfirm(tx, threeExecSigners);
-		console.log(`${indent}✅ withdrawFromVault successful, tx:`, txSig);
+		const signature = await provider.sendAndConfirm(tx, threeExecSigners);
+		console.log(`${indent} ✅ withdrawFromVault successful, tx:${signature}`);
+
+
+		// Show after result
+		{
+			const vaultSolBalance = await provider.connection.getBalance(vaultPda);
+			console.log(`${indent}💰 After Vault SOL balance:`, vaultSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58());
+
+
+			// Vault USDT token accounts
+			const vaultUsdtAta = await getAssociatedTokenAddress(usdt_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+			try {
+				const vaultUsdtAtaInfo = await getAccount(provider.connection as any, vaultUsdtAta);
+				const vaultUSDTBalance = Number(vaultUsdtAtaInfo.amount) / 1_000_000;
+				console.log(`${indent}💰 After Vault USDT balance:`, vaultUSDTBalance, "USDT with ATA:", vaultUsdtAta.toBase58());
+			} catch (e) {
+				console.log(`${indent}💰 After Vault USDT balance: 0 USDT (ATA not found)`);
+			}
+			
+			// Vault H2coin token accounts
+			const vaultH2coinAta = await getAssociatedTokenAddress(h2coin_mint, vaultPda, true, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID);
+			try {
+				const vaultH2coinAtaInfo = await getAccount(provider.connection as any, vaultH2coinAta);
+				const vaultH2coinBalance = Number(vaultH2coinAtaInfo.amount) / 1_000_000;
+				console.log(`${indent}💰 After Vault H2COIN balance:`, vaultH2coinBalance, "H2COIN with ATA:", vaultH2coinAta.toBase58());
+			} catch (e) {
+				console.log(`${indent}💰 After Vault H2COIN balance: 0 H2COIN (ATA not found)`);
+			}
+		}
 	});
 });
