@@ -351,11 +351,6 @@ pub struct EstimateProfitShare<'info> {
     // The payer is the one who pays for the transaction fees
     #[account(mut)]
     pub payer: Signer<'info>,
-
-    // The signer is the one who signs the transaction
-    #[account(mut)]
-    pub signer: Signer<'info>,
-
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
 }
@@ -391,11 +386,6 @@ pub struct EstimateRefundShare<'info> {
     // The payer is the one who pays for the transaction fees
     #[account(mut)]
     pub payer: Signer<'info>,
-
-    // The signer is the one who signs the transaction
-    #[account(mut)]
-    pub signer: Signer<'info>,
-
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
 }

@@ -114,16 +114,6 @@ This document outlines all Anchor `#[event]` definitions used in the H2Coin Vaul
 | `executed_at`         | i64         | 8            | Timestamp                    |
 | `signers`             | Vec<Pubkey> | varies       | Multisig signers             |
 
-### `ProfitPaidEvent`, `RefundPaidEvent`
-
-| Field           | Type      | Size (Bytes) | Description      |
-| --------------- | --------- | ------------ | ---------------- |
-| `investment_id` | \[u8; 15] | 15           | Investment ID    |
-| `version`       | \[u8; 4]  | 4            | Version          |
-| `to`            | Pubkey    | 32           | Recipient wallet |
-| `amount_*`      | u64       | 8            | Transfer amount  |
-| `pay_at`        | i64       | 8            | Timestamp        |
-
 ---
 
 ## 💰 Vault Activity Events
