@@ -8,7 +8,6 @@ import {
 	PublicKey, Keypair, 
 	AddressLookupTableProgram,
 } from "@solana/web3.js";
-
 import { getAssociatedTokenAddress, 
 	ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID,
 	ACCOUNT_SIZE,
@@ -28,7 +27,7 @@ describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcp111";
+	const __investmentId = "02SEHzIZfBcpAee";
 	const __version = "c9060006";
 
 
@@ -52,7 +51,7 @@ describe("Investment Record management", async () => {
 	before("Initialize investment info with STANDARD type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Initialize invesgtment info with STANDARD type program...`);
+		console.log(`🚀 Initialize invesgtment info with STANDARD type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -196,7 +195,7 @@ describe("Investment Record management", async () => {
 	it('(0) adds new investment records (batch mode)', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Adding investment records program ...`);
+		console.log(`🚀 Adding investment records program ...`);
 
 
 		const program = R.program;
@@ -388,7 +387,7 @@ describe("Investment Record management", async () => {
 	it('(1) Update investment record wallet base on accont_id', async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Update investment record wallet base on accont_id program ...`);
+		console.log(`🚀 Update investment record wallet base on accont_id program ...`);
 		
 
 		const program = R.program;
@@ -536,7 +535,7 @@ describe("Investment Record management", async () => {
 	it("(2) Revoke investment record", async function() {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Revoke investment record program...`);
+		console.log(`🚀 Revoke investment record program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -679,7 +678,7 @@ describe("Investment Record management", async () => {
 	it('(4) Update investment record wallet again', async function () {		
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Update investment record wallet again program ...`);
+		console.log(`🚀 Update investment record wallet again program ...`);
 
 
 		const program = R.program;
@@ -826,7 +825,7 @@ describe("Investment Record management", async () => {
 	it("(5) Create ALT from investment records", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Create ALT from investment records program...`);
+		console.log(`🚀 Create ALT from investment records program...`);
 
 
 		const program = R.program;
@@ -877,8 +876,8 @@ describe("Investment Record management", async () => {
 
 
 		tx_alt.add(createIx, extendIx);
-		const sig = await provider.sendAndConfirm(tx_alt, []);
-		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}`);
+		const signature = await provider.sendAndConfirm(tx_alt, []);
+		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature = ${signature}`);
 		await new Promise(resolve => setTimeout(resolve, 1500));
 
 
@@ -902,7 +901,7 @@ describe("Investment Record management", async () => {
 	it("(6) Estimate profit share using ALT with standard type", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process estimate profit share program...`);
+		console.log(`🚀 Process estimate profit share program...`);
 		
 
 		const program = R.program;
@@ -1048,7 +1047,7 @@ describe("Investment Record management", async () => {
 	it("(7) Estimate refund share using ALT with standard type", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process estimate refund share program...`);
+		console.log(`🚀 Process estimate refund share program...`);
 		
 
 		const program = R.program;
@@ -1194,7 +1193,7 @@ describe("Investment Record management", async () => {
 	it("(9) Create ALT from Profit Share Cache entries", async function () {
 		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Create ALT from ProfitShareCache entries prgram...`);
+		console.log(`🚀 Create ALT from ProfitShareCache entries prgram...`);
 
 
 		const program = R.program;
@@ -1262,7 +1261,7 @@ describe("Investment Record management", async () => {
 	it("(10) Deposit sol, USDT and H2coin into vaultPDA", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Deposit sol, USDT and H2coin into vaultPDA program...`);
+		console.log(`🚀 Deposit sol, USDT and H2coin into vaultPDA program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -1422,7 +1421,7 @@ describe("Investment Record management", async () => {
 	it("(11) Execute profit share using ALT", async function () {
 		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Execute profit share using ALT program...`);
+		console.log(`🚀 Execute profit share using ALT program...`);
 
 		
 		const program = R.program;
@@ -1529,7 +1528,7 @@ describe("Investment Record management", async () => {
 	it("(12) Create ALT from Refund Share Cache entries", async function () {
 		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Create ALT from Refund Share Cache entries prgram...`);
+		console.log(`🚀 Create ALT from Refund Share Cache entries prgram...`);
 
 
 		const program = R.program;
@@ -1549,9 +1548,7 @@ describe("Investment Record management", async () => {
 			],
 			program.programId
 		);
-		const cache = await program.account.refundShareCache.fetch(cachePda);
-		console.log('cache', cache.entries.length);
-		
+		const cache = await program.account.refundShareCache.fetch(cachePda);	
 
 
 		// Construct list of ATA pubkeys
@@ -1623,7 +1620,7 @@ describe("Investment Record management", async () => {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process Execute Refund Share using ALT program...`);
+		console.log(`🚀 Process Execute Refund Share using ALT program...`);
 
 		
 		const program = R.program;
@@ -1725,7 +1722,7 @@ describe("Investment Record management", async () => {
 
 	it("(14) Withdraw from vaultPDA balance to withdraw wallet", async function () {
 		const indent = ResolveIndent(this, 1);
-		console.log(`📃 Process Withdraw from vault balance to withdraw wallet program...`);
+		console.log(`🚀 Process Withdraw from vault balance to withdraw wallet program...`);
 
 	
 		const program = R.program;

@@ -17,8 +17,8 @@ import {Runtime as R} from "./devnet.runtime";
 
 
 describe("📃h2coin whitelist-check", async () => {
-	const __investmentId = "02SEHzIZfBcpa22";
-	const __version = "3e2ea000";
+	const __investmentId = "02SEHzIZfBcpIZ1";
+	const __version = "b9b64000";
 	
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
 		units: 400_000, // or even 500_000 if needed

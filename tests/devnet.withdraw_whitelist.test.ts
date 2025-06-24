@@ -16,9 +16,9 @@ import {Runtime as R} from "./devnet.runtime";
 
 
 
-describe("📃h2coin whitelist-check", async () => {
-	const __investmentId = "02SEHzIZfBcpa22";
-	const __version = "3e2ea000";
+describe("h2coin whitelist-check", async () => {
+	const __investmentId = "02SEHzIZfBcpIZ1";
+	const __version = "b9b64000";
 	
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
 		units: 400_000, // try 400k or 500k if needed
@@ -32,7 +32,7 @@ describe("📃h2coin whitelist-check", async () => {
 	before("Initialize investment info with CSR type", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
+		console.log(`🚀 Initialize invesgtment info with CSR type program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -176,7 +176,7 @@ describe("📃h2coin whitelist-check", async () => {
 	it("(0) Replace whole with empty", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Replace whole with empty program...`);
+		console.log(`🚀 Replace whole with empty program...`);
 
 
 		const program = R.program;
@@ -241,7 +241,7 @@ describe("📃h2coin whitelist-check", async () => {
 	it("(1) Replace whole with update whitelist signer", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Replace whole with update whitelist signer program...`);
+		console.log(`🚀 Replace whole with update whitelist signer program...`);
 
 		const program = R.program;
 		const investmentInfoPda = R.investmentInfoPda;
@@ -306,7 +306,7 @@ describe("📃h2coin whitelist-check", async () => {
 	it("(2) Replace whole", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Replace whole program...`);
+		console.log(`🚀 Replace whole program...`);
 
 
 		const program = R.program;
@@ -368,7 +368,7 @@ describe("📃h2coin whitelist-check", async () => {
 	it("(3) Reset to original whitelist", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Reset to original whitelist program...`);
+		console.log(`🚀 Reset to original whitelist program...`);
 
 		const program = R.program;
 		const investmentInfoPda = R.investmentInfoPda;

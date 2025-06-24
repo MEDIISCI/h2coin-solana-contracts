@@ -19,8 +19,8 @@ import { create } from "domain";
 
 
 describe("Investment Info", async function() {
-	const __investmentId = "02SEHzIZfBcp111";
-	const __version = "3e2ea008";
+	const __investmentId = "02SEHzIZfBcpIZ0";
+	const __version = "b9b64000";
 
 	const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
 		units: 400_000, // try 400k or 500k if needed
@@ -32,7 +32,7 @@ describe("Investment Info", async function() {
 	it("(0) Initialize investment info", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Initialize invesgtment info program...`);
+		console.log(`🚀 Initialize invesgtment info program...`);
 		
 		const program = R.program;
 		const provider = R.provider;
@@ -189,7 +189,7 @@ describe("Investment Info", async function() {
 	it("(1) Fail initialize investment info when it has been initialized", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Fail initialize investment info when it has been initialized program...`);
+		console.log(`🚀 Fail initialize investment info when it has been initialized program...`);
 		
 
 		const program = R.program;
@@ -348,7 +348,7 @@ describe("Investment Info", async function() {
 	it("(2) Update investment info works", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Update investment info works program...`);
+		console.log(`🚀 Update investment info works program...`);
 
 
 		const program = R.program;
@@ -418,7 +418,7 @@ describe("Investment Info", async function() {
 	it("(3) Set investment state to complete", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout		
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Set investment state to complete program...`);
+		console.log(`🚀 Set investment state to complete program...`);
 
 
 		const program = R.program;
@@ -464,7 +464,7 @@ describe("Investment Info", async function() {
 	it("(4) Fail update investment info when state is completed", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Fail update investment info when state is completed program...`);
+		console.log(`🚀 Fail update investment info when state is completed program...`);
 
 
 		const program = R.program;
@@ -531,7 +531,7 @@ describe("Investment Info", async function() {
 	it("(5) Set investment state to deactivated", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Set investment state to deactived program...`);
+		console.log(`🚀 Set investment state to deactived program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -573,7 +573,7 @@ describe("Investment Info", async function() {
 	it("(6) Replace existing key with new key", async function() {
 		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`${indent}📃 Replace existing key with new key program...`);
+		console.log(`🚀 Replace existing key with new key program...`);
 		
 
 		const program = R.program;

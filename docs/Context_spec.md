@@ -413,7 +413,7 @@ The H2Coin Vault supports two deposit paths:
 1.  `DepositSolToVault` — transfers SOL from a user to the vault PDA.
 2.  `DepositTokenToVault` — transfers SPL tokens (USDT or H2COIN) from a user’s ATA to the vault's ATA.
 
-🔑 PDA seeds
+### 🔑 PDA seeds
 
 > `vault`: `["vault", investment_id, version]`
 
