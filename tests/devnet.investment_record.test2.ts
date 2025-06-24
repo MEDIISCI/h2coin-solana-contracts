@@ -27,8 +27,8 @@ describe("Investment Record management", async () => {
 	let is_record_add = false as boolean;
 
 
-	const __investmentId = "02SEHzIZfBcpIZ4";
-	const __version = "b9b64000";
+	const __investmentId = "02SEHzIZfBcp111";
+	const __version = "c9060006";
 
 
 	const batchId = 2;
@@ -876,8 +876,8 @@ describe("Investment Record management", async () => {
 
 
 		tx_alt.add(createIx, extendIx);
-		const signature = await provider.sendAndConfirm(tx_alt, []);
-		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature = ${signature}`);
+		const sig = await provider.sendAndConfirm(tx_alt, []);
+		console.log(`${indent}✅ Created ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}`);
 		await new Promise(resolve => setTimeout(resolve, 1500));
 
 
@@ -1010,21 +1010,19 @@ describe("Investment Record management", async () => {
 			const info = await program.account.investmentInfo.fetch(investmentInfoPda);
 			const cache = await program.account.profitShareCache.fetch(cachePda);
 
-			console.log(`${indent}🧠 PProfitShareCache summary:`, 
-				{
-					batchId,
-					investmentId: Buffer.from(cache.investmentId).toString().replace(/\0/g, ""),
-					version: Buffer.from(cache.version).toString().replace(/\0/g, ""),
-					investmentType: Object.keys(info.investmentType)[0],
-					totalProfitUsdt: totalProfitUsdt.toString(),
-					totalInvestUsdt: totalInvestUsdt.toString(),
-					subtotalProfitUsdt: cache.subtotalProfitUsdt.toString(),
-					subtotalEstimateSol: cache.subtotalEstimateSol.toString(),
-					createdAt: new Date(cache.createdAt.toNumber() * 1000).toISOString(),
-				}
-			);
+			console.log(`${indent}🧠 Profit Share Cache summary:`);
+			console.log(`${indent}		batchId:`, batchId);
+			console.log(`${indent}		investmentId:`, Buffer.from(cache.investmentId).toString().replace(/\0/g, ""));
+			console.log(`${indent}		version:`, Buffer.from(version).toString('hex'));
+			console.log(`${indent}		investmentType:`, Object.keys(info.investmentType)[0]);
+			console.log(`${indent}		totalProfitUsdt:`, totalProfitUsdt.toString());
+			console.log(`${indent}		totalInvestUsdt:`, totalInvestUsdt.toString());
+			console.log(`${indent}		subtotalProfitUsdt:`, cache.subtotalProfitUsdt.toString());
+			console.log(`${indent}		subtotalEstimateSol:`, cache.subtotalEstimateSol.toString());
+			console.log(`${indent}		createdAt:`, new Date(cache.createdAt.toNumber() * 1000).toISOString());
+			
 
-			console.log(`${indent}🧠 Profit Cache entry detail and count:`, cache.entries.length);			
+			console.log(`${indent}🧠 List profit entries and count:`, cache.entries.length);			
 			for (const entry of cache.entries) {
 				const data = {
 					accountId: bytesToFixedString(entry.accountId),
@@ -1032,7 +1030,7 @@ describe("Investment Record management", async () => {
 					amountUsdt: entry.amountUsdt.toString(),
 					ratioBp: entry.ratioBp /100
 				};
-				console.log(data);
+				console.log(`${indent}`, JSON.stringify(data));
 			}
 
 			// delay 1 second
@@ -1152,7 +1150,7 @@ describe("Investment Record management", async () => {
 			const info = await program.account.investmentInfo.fetch(investmentInfoPda);
 			const cache = await program.account.refundShareCache.fetch(cachePda);
 
-			console.log("🧠 Refund cache:", {
+			console.log(`${indent}🧠 Refund Share cache Summary:`, {
 				batchId,
 				vault: info.vault.toBase58(),
 				investmentId: Buffer.from(cache.investmentId).toString().replace(/\0/g, ""),
@@ -1163,14 +1161,14 @@ describe("Investment Record management", async () => {
 				createdAt: new Date(cache.createdAt.toNumber() * 1000).toISOString(),
 			});
 
-			console.log(`${indent}🧠 Refund cache entry detail and count:`, cache.entries.length);
+			console.log(`${indent}🧠 List Refund entry and count:`, cache.entries.length);
 			for (const entry of cache.entries) {
 				const data = {
 					accountId: bytesToFixedString(entry.accountId),
 					wallet: entry.wallet.toBase58(),
 					amountHcoin: entry.amountHcoin.toString(),
 				};
-				console.log(data);
+				console.log(`${indent}`, JSON.stringify(data));
 			}
 
 			expect(errorCaught).to.be.false;
@@ -1822,7 +1820,7 @@ describe("Investment Record management", async () => {
 		console.log(`${indent} ✅ withdrawFromVault successful, tx:${signature}`);
 
 
-		// Show after result
+		// Show after vault PDA result
 		{
 			const vaultSolBalance = await provider.connection.getBalance(vaultPda);
 			console.log(`${indent}💰 After Vault SOL balance:`, vaultSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58());
@@ -1846,6 +1844,33 @@ describe("Investment Record management", async () => {
 				console.log(`${indent}💰 After Vault H2COIN balance:`, vaultH2coinBalance, "H2COIN with ATA:", vaultH2coinAta.toBase58());
 			} catch (e) {
 				console.log(`${indent}💰 After Vault H2COIN balance: 0 H2COIN (ATA not found)`);
+			}
+		}
+
+		// Show after withdraw wallet result
+		{
+			const recipientSolBalance = await provider.connection.getBalance(recipient);
+			console.log(`${indent}💰 After recipient SOL balance:`, vaultSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58());
+
+
+			// Vault USDT token accounts
+			const recipientUsdtAta = await getAssociatedTokenAddress(usdt_mint, recipient);
+			try {
+				const recipientUsdtAtaInfo = await getAccount(provider.connection as any, recipientUsdtAta);
+				const recipientUSDTBalance = Number(recipientUsdtAtaInfo.amount) / 1_000_000;
+				console.log(`${indent}💰 After recipient USDT balance:`, recipientUSDTBalance, "USDT with ATA:", recipientUsdtAta.toBase58());
+			} catch (e) {
+				console.log(`${indent}💰 After recipient USDT balance: 0 USDT (ATA not found)`);
+			}
+			
+			// Vault H2coin token accounts
+			const recipientH2coinAta = await getAssociatedTokenAddress(h2coin_mint, recipient);
+			try {
+				const recipientH2coinAtaInfo = await getAccount(provider.connection as any, recipientH2coinAta);
+				const recipientH2coinBalance = Number(recipientH2coinAtaInfo.amount) / 1_000_000;
+				console.log(`${indent}💰 After recipient H2COIN balance:`, recipientH2coinBalance, "H2COIN with ATA:", recipientH2coinAta.toBase58());
+			} catch (e) {
+				console.log(`${indent}💰 After recipient H2COIN balance: 0 H2COIN (ATA not found)`);
 			}
 		}
 	});
