@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Execute Whitelist Management Test Suite for H2Coin Vault Share Program
+ * This test suite validates the execute whitelist functionality including initialization,
+ * whitelist patching, and access control mechanisms for investment execution permissions.
+ * 
+ * SECURITY CONSIDERATIONS:
+ * - Tests whitelist-based access control for investment execution
+ * - Validates multi-signature requirements for whitelist modifications
+ * - Ensures proper authorization checks for whitelist operations
+ * - Tests edge cases in whitelist management
+ * 
+ * @audit This test suite is critical for security validation and should be reviewed for:
+ * - Access control mechanism effectiveness
+ * - Multi-signature validation
+ * - Whitelist state consistency
+ * - Authorization bypass prevention
+ * - Edge case handling in whitelist operations
+ */
+
 import { expect } from "chai";
 import {describe, it} from "mocha";
 import * as Anchor from "@coral-xyz/anchor";

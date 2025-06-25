@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Investment Information Management Test Suite for H2Coin Vault Share Program
+ * This test suite validates the investment information functionality including initialization,
+ * state management, and access control mechanisms for investment configuration.
+ * 
+ * SECURITY CONSIDERATIONS:
+ * - Tests investment information initialization and validation
+ * - Validates state transitions and lifecycle management
+ * - Ensures proper authorization checks for investment operations
+ * - Tests edge cases in investment information management
+ * 
+ * @audit This test suite is critical for security validation and should be reviewed for:
+ * - Investment state initialization security
+ * - State transition validation and consistency
+ * - Authorization bypass prevention for investment operations
+ * - Edge case handling in investment lifecycle management
+ * - Data integrity validation for investment parameters
+ */
+
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import * as Anchor from "@coral-xyz/anchor";

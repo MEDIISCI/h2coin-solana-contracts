@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Profit and Refund Share Management Test Suite for H2Coin Vault Share Program
+ * This test suite validates the profit sharing and refund functionality including distribution,
+ * calculation mechanisms, and access control for profit/refund operations.
+ * 
+ * SECURITY CONSIDERATIONS:
+ * - Tests profit sharing calculation and distribution mechanisms
+ * - Validates refund processing and distribution logic
+ * - Ensures proper authorization checks for profit/refund operations
+ * - Tests edge cases in profit and refund share management
+ * 
+ * @audit This test suite is critical for security validation and should be reviewed for:
+ * - Profit sharing calculation accuracy and security
+ * - Refund distribution integrity and consistency
+ * - Authorization bypass prevention for profit/refund operations
+ * - Edge case handling in profit and refund management
+ * - Financial calculation validation and precision
+ */
+
 import { expect } from "chai";
 import {describe, it} from "mocha";
 import bs58 from "bs58";

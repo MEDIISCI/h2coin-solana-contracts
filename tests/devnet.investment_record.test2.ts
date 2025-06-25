@@ -1,3 +1,22 @@
+/**
+ * @fileoverview Investment Record Management Test Suite Part 2 for H2Coin Vault Share Program
+ * This test suite validates advanced investment record functionality including complex operations,
+ * record validation, and comprehensive access control mechanisms for investment tracking.
+ * 
+ * SECURITY CONSIDERATIONS:
+ * - Tests advanced investment record operations and validation
+ * - Validates complex record integrity and data consistency scenarios
+ * - Ensures comprehensive authorization checks for record operations
+ * - Tests complex edge cases in investment record management
+ * 
+ * @audit This test suite is critical for security validation and should be reviewed for:
+ * - Advanced investment record operation security and validation
+ * - Complex batch processing integrity and consistency
+ * - Comprehensive authorization bypass prevention for record operations
+ * - Complex edge case handling in record management
+ * - Advanced data integrity validation for investment records
+ */
+
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import bs58 from "bs58";
