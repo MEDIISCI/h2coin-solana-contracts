@@ -29,7 +29,7 @@ import { stringToFixedU8Array } from "./lib/lib";
  * Type definition for Address Lookup Table categories
  * Used to organize and manage different types of lookup tables in the test environment
  */
-type AltTableType = 'record' | 'cache';
+type AltTableType = 'record' | 'profit' | 'refund';
 
 /**
  * Global runtime configuration object
@@ -130,7 +130,8 @@ before(async()=>{
 	// Initialize lookup table maps for efficient address resolution
 	// @audit These maps improve transaction efficiency but should be validated
 	Runtime.lookupTableMap.set('record', new Map());
-	Runtime.lookupTableMap.set('cache', new Map());
+	Runtime.lookupTableMap.set('profit', new Map());
+	Runtime.lookupTableMap.set('refund', new Map());
 
 	// Set system program references
 	R.rent = SYSVAR_RENT_PUBKEY;

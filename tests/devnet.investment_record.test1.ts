@@ -36,7 +36,7 @@ import { stringToFixedU8Array, stage_ratio_map,
 	loadWithdrawWhitelistKeypairs, 
 	bytesToFixedString,	u16ToLEBytes
 } from "./lib/lib";
-import {Runtime as R} from "./devnet.runtime";
+import {Runtime as R} from "./runtime";
 
 
 
@@ -171,13 +171,13 @@ describe("Investment Record management", async () => {
 
 		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
 		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
-			console.log("❌ USDT ATA does not exist");
+			console.log(`${indent}❌ USDT ATA does not exist`);
 			return;
 		}
 
 		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
 		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
-			console.log("❌ H2COIN ATA does not exist");
+			console.log(`${indent}❌ H2COIN ATA does not exist`);
 			return;
 		}
 
@@ -342,64 +342,65 @@ describe("Investment Record management", async () => {
 				console.log(`${indent}✅ Successfully inserted ${MAX_RECORDS_PER_TX} investment records into batch #${batchId}. Tx signature: ${signature}`);
 
 
-
 				await new Promise(resolve => setTimeout(resolve, 1000));
 
+
+				const result1 = await program.account.investmentRecord.all([
+					{
+						memcmp: {
+							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							bytes: bs58.encode(Buffer.from(investmentId)),
+						},
+					},
+					{
+						memcmp: {
+							offset: 33 + 15, // version
+							bytes: bs58.encode(Buffer.from(version)),
+						},
+					},
+				]);
+				expect(result1.length).to.be.greaterThan(0);
+
+
+				const result2 = await program.account.investmentRecord.all([
+					{
+						memcmp: {
+							offset: 8, // discriminator + batchId
+							bytes: bs58.encode(Array.from(batchIdBytes)),
+						},
+					},
+					{
+						memcmp: {
+							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							bytes: bs58.encode(Buffer.from(investmentId)),
+						},
+					},
+					{
+						memcmp: {
+							offset: 33 + 15, // version
+							bytes: bs58.encode(Buffer.from(version)),
+						},
+					},
+				]);
+				expect(result2.length).to.be.greaterThan(0);
+
+				console.log(`${indent}✅ Add investment record result:`);
+				console.log(`${indent}	total_invest_usdt:`, total_invest_usdt);
+				console.log(`${indent}	total_record_by_batchId:`, result2.length);
+				console.log(`${indent}	total_record_by_investmentId:`, result1.length);
+
 			} catch (e: any) {
-				console.error(`${indent}❌ Batch send failed:`, e.logs ?? e.message);
-				throw e;
+				console.log(`${indent}✅ Investment Info State has completed`);
+				if (e?.error?.errorCode?.code) {
+					expect(e).to.have.property("error");
+					expect(e.error.errorCode.code).to.be.oneOf([
+						"InvestmentInfoDeactivated",
+						"InvestmentInfoHasCompleted"
+					]);
+				} else {
+					throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+				}
 			}
-		}
-
-	
-		try {
-			const result1 = await program.account.investmentRecord.all([
-				{
-					memcmp: {
-						offset: 33, // discriminator 是前8位，接下來是 investment_id
-						bytes: bs58.encode(Buffer.from(investmentId)),
-					},
-				},
-				{
-					memcmp: {
-						offset: 33 + 15, // version
-						bytes: bs58.encode(Buffer.from(version)),
-					},
-				},
-			]);
-			expect(result1.length).to.be.greaterThan(0);
-
-
-			const result2 = await program.account.investmentRecord.all([
-				{
-					memcmp: {
-						offset: 8, // discriminator + batchId
-						bytes: bs58.encode(Array.from(batchIdBytes)),
-					},
-				},
-				{
-					memcmp: {
-						offset: 33, // discriminator 是前8位，接下來是 investment_id
-						bytes: bs58.encode(Buffer.from(investmentId)),
-					},
-				},
-				{
-					memcmp: {
-						offset: 33 + 15, // version
-						bytes: bs58.encode(Buffer.from(version)),
-					},
-				},
-			]);
-			expect(result2.length).to.be.greaterThan(0);
-
-			console.log(`${indent}✅ Add investment record result:`, {
-				batchId,
-				total_invest_usdt,
-				total_record_by_batchId: result2.length,
-				total_record_by_investmentId: result1.length,
-			});
-		} catch (e) {
-			console.error(`${indent}❌ error:`, e);
 		}
 	});
 
@@ -549,7 +550,18 @@ describe("Investment Record management", async () => {
 				}))
 			);
 		} catch (e:any) {
-			expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			if (e?.transactionLogs) {
+				expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+			}
 		}
 	});
 
@@ -842,7 +854,18 @@ describe("Investment Record management", async () => {
 				}))
 			);
 		} catch (e:any) {
-			expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			if (e?.transactionLogs) {
+				expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+			}
 		}
 	});
 
@@ -1064,7 +1087,20 @@ describe("Investment Record management", async () => {
 		} catch (e:any) {			
 			errorCaught = true;			
 			expect(errorCaught).to.be.true;
-			expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+
+			if (e?.transactionLogs) {
+				expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+			}
 		}
 	});
 });

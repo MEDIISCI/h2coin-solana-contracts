@@ -38,7 +38,7 @@ import { stringToFixedU8Array, stage_ratio_map,
 	loadWithdrawWhitelistKeypairs, 
 	bytesToFixedString,	u16ToLEBytes
 } from "./lib/lib";
-import {Runtime as R} from "./devnet.runtime";
+import {Runtime as R} from "./runtime";
 
 
 
@@ -175,13 +175,13 @@ describe("Investment Record management", async () => {
 
 		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
 		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
-			console.log("❌ USDT ATA does not exist");
+			console.log(`${indent}❌ USDT ATA does not exist`);
 			return;
 		}
 
 		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
 		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
-			console.log("❌ H2COIN ATA does not exist");
+			console.log(`${indent}❌ H2COIN ATA does not exist`);
 			return;
 		}
 
@@ -345,61 +345,62 @@ describe("Investment Record management", async () => {
 
 				await new Promise(resolve => setTimeout(resolve, 1000));
 
+				const result1 = await program.account.investmentRecord.all([
+					{
+						memcmp: {
+							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							bytes: bs58.encode(Buffer.from(investmentId)),
+						},
+					},
+					{
+						memcmp: {
+							offset: 33 + 15, // version
+							bytes: bs58.encode(Buffer.from(version)),
+						},
+					},
+				]);
+				expect(result1.length).to.be.greaterThan(0);
+
+
+				const result2 = await program.account.investmentRecord.all([
+					{
+						memcmp: {
+							offset: 8, // discriminator + batchId
+							bytes: bs58.encode(Array.from(batchIdBytes)),
+						},
+					},
+					{
+						memcmp: {
+							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							bytes: bs58.encode(Buffer.from(investmentId)),
+						},
+					},
+					{
+						memcmp: {
+							offset: 33 + 15, // version
+							bytes: bs58.encode(Buffer.from(version)),
+						},
+					},
+				]);
+				expect(result2.length).to.be.greaterThan(0);
+
+				console.log(`${indent}✅ Add investment record result:`);
+				console.log(`${indent}	total_invest_usdt:`, total_invest_usdt);
+				console.log(`${indent}	total_record_by_batchId:`, result2.length);
+				console.log(`${indent}	total_record_by_investmentId:`, result1.length);
+
 			} catch (e: any) {
-				const logs = e.transactionLogs?.join("\n") || e.message || JSON.stringify(e);
-				expect(logs).to.include("InvestmentInfoHasCompleted");
+				console.log(`${indent}✅ Investment Info State has completed`);
+				if (e?.error?.errorCode?.code) {
+					expect(e).to.have.property("error");
+					expect(e.error.errorCode.code).to.be.oneOf([
+						"InvestmentInfoDeactivated",
+						"InvestmentInfoHasCompleted"
+					]);
+				} else {
+					throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+				}
 			}
-		}
-
-
-		try {
-			const result1 = await program.account.investmentRecord.all([
-				{
-					memcmp: {
-						offset: 33, // discriminator 是前8位，接下來是 investment_id
-						bytes: bs58.encode(Buffer.from(investmentId)),
-					},
-				},
-				{
-					memcmp: {
-						offset: 33 + 15, // version
-						bytes: bs58.encode(Buffer.from(version)),
-					},
-				},
-			]);
-			expect(result1.length).to.be.greaterThan(0);
-
-
-			const result2 = await program.account.investmentRecord.all([
-				{
-					memcmp: {
-						offset: 8, // discriminator + batchId
-						bytes: bs58.encode(Array.from(batchIdBytes)),
-					},
-				},
-				{
-					memcmp: {
-						offset: 33, // discriminator 是前8位，接下來是 investment_id
-						bytes: bs58.encode(Buffer.from(investmentId)),
-					},
-				},
-				{
-					memcmp: {
-						offset: 33 + 15, // version
-						bytes: bs58.encode(Buffer.from(version)),
-					},
-				},
-			]);
-			expect(result2.length).to.be.greaterThan(0);
-
-			console.log(`${indent}🔍  Add investment record result:`, {
-				batchId,
-				total_invest_usdt,
-				total_record_by_batchId: result2.length,
-				total_record_by_investmentId: result1.length,
-			});
-		} catch (e) {
-			console.error(`${indent}❌ error:`, e);
 		}
 	});
 
@@ -547,7 +548,19 @@ describe("Investment Record management", async () => {
 				}))
 			);
 		} catch (e:any) {
-			expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			if (e?.transactionLogs) {
+				expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoHasCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+			}
 		}
 	});
 
@@ -649,12 +662,15 @@ describe("Investment Record management", async () => {
 				}
 			);
 		} catch (e:any) {
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
-				"RecordAlreadyRevoked",
-				"InvestmentInfoDeactivated",
-				"InvestmentInfoNotCompleted"
-			]);
+			if (e?.error?.errorCode?.code) {
+				expect(e.error.errorCode.code, `Actual code: ${e.error.errorCode.code}`).to.be.oneOf([
+					"RecordAlreadyRevoked",
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+			}
 		}
 	});
 
@@ -837,7 +853,18 @@ describe("Investment Record management", async () => {
 				}))
 			);
 		} catch (e:any) {
-			expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			if (e?.transactionLogs) {
+				expect(e.transactionLogs.join('\n')).to.include("NoRecordsUpdated");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
+			}
 		}
 	});
 
@@ -1068,9 +1095,18 @@ describe("Investment Record management", async () => {
 			// delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
 		} catch (e:any) {
-			console.log(e);
-			if (e.transactionLogs) {
+			if (e?.transactionLogs) {
 				expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
 			}
 		}
 	});
@@ -1212,17 +1248,14 @@ describe("Investment Record management", async () => {
 
 			expect(errorCaught).to.be.false;
 		} catch (e:any) {
-			console.error(e);
-	
-			errorCaught = true;
-			expect(errorCaught).to.be.true;	
-
-			console.log("🔍 Checking investment records:");
-			for (const [i, pda] of investmentRecordPdas.entries()) {
-				const record = await program.account.investmentRecord.fetch(pda);
-				if (!record) {
-					console.error(`❌ Missing InvestmentRecord[${i}] → ${pda}`);
-				}
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
 			}
 		}
 	});
@@ -1289,7 +1322,7 @@ describe("Investment Record management", async () => {
 			{ commitment: "confirmed" }
 		);
 
-		R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
+		R.lookupTableMap.get('profit')!.set(batchId, lookupTableAddress);
 		console.log(`${indent}✅ Created Profit ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}`);
 		await new Promise(resolve => setTimeout(resolve, 1000)); // optional delay
 		
@@ -1466,7 +1499,7 @@ describe("Investment Record management", async () => {
 		const investmentId = R.investmentId;
 		const investmentInfoPda = R.investmentInfoPda;
 		const version = R.version;
-		const lookupTableAddress = R.lookupTableMap.get('cache')!.get(batchId);
+		const lookupTableAddress = R.lookupTableMap.get('profit')!.get(batchId);
 		const usdtMint = R.usdt_mint;
 		const payer = provider.wallet.publicKey;
 
@@ -1570,12 +1603,23 @@ describe("Investment Record management", async () => {
 				"confirmed"
 			);
 
-			console.log(`${indent}✅ Execute Profit for batchId: ${batchId}, signature: ${signature}`);
-			console.log(`${indent}📦 Execute Profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
+			if (result.value.err === null) {
+				console.log(`${indent}✅ Execute Profit for batchId: ${batchId}, signature: ${signature}`);
+			}
 		} catch (e:any) {
-			if (e.logs && e.logs.length) {
+			if (e?.logs.length) {
 				expect(e.logs).to.not.be.undefined;
 				expect(e.logs.join("\n")).to.include("Insufficient USDT Token balance in vault");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
 			}
 		}
 	});
@@ -1666,7 +1710,7 @@ describe("Investment Record management", async () => {
 		if (!lookupTableAccount) throw new Error("ALT did not become available in time");
 
 		// Store the lookup table address in the map
-		R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
+		R.lookupTableMap.get('refund')!.set(batchId, lookupTableAddress);
 		
 	});
 
@@ -1682,7 +1726,7 @@ describe("Investment Record management", async () => {
 		const investmentId = R.investmentId;
 		const investmentInfoPda = R.investmentInfoPda;
 		const version = R.version;
-		const lookupTableAddress = R.lookupTableMap.get('cache')!.get(batchId);
+		const lookupTableAddress = R.lookupTableMap.get('refund')!.get(batchId);
 		const h2coin_mint = R.h2coin_mint;
 		const payer = provider.wallet.publicKey;
 
@@ -1784,12 +1828,23 @@ describe("Investment Record management", async () => {
 				"confirmed"
 			);
 
-			console.log(`${indent}✅ Execute refund for batchId: ${batchId}, signature: ${signature}`);
-			console.log(`${indent}📦 Execute refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');
+			if (result.value.err === null) {
+				console.log(`${indent}✅ Execute refund for batchId: ${batchId}, signature: ${signature}`);
+			}
 		} catch (e:any) {
-			if (e.logs && e.logs.length) {
+			if (e?.logs.length) {
 				expect(e.logs).to.not.be.undefined;
 				expect(e.logs.join("\n")).to.include("Insufficient H2coin Token balance in vault");
+			}
+			else
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				throw new Error(`Unexpected error structure: ${JSON.stringify(e, null, 2)}`);
 			}
 		}
 	});

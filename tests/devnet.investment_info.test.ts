@@ -32,7 +32,7 @@ import { stringToFixedU8Array, stage_ratio_map,
 	loadExecuteWhitelistKeypairs, loadUpdateWhitelistKeypairs, 
 	loadWithdrawWhitelistKeypairs, 
 	bytesToFixedString} from "./lib/lib";
-import {Runtime as R} from "./devnet.runtime";
+import {Runtime as R} from "./runtime";
 import { create } from "domain";
 
 
@@ -169,13 +169,13 @@ describe("Investment Info", async function() {
 
 		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
 		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
-			console.log("❌ USDT ATA does not exist");
+			console.log(`${indent}❌ USDT ATA does not exist`);
 			return;
 		}
 
 		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
 		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
-			console.log("❌ H2COIN ATA does not exist");
+			console.log(`${indent}❌ H2COIN ATA does not exist`);
 			return;
 		}
 

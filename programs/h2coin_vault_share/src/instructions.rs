@@ -130,16 +130,6 @@ pub fn update_investment_info(
     let info = &mut ctx.accounts.investment_info;
 
 
-    let (expected_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            info.investment_id.as_ref(),
-            info.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_pda, ErrorCode::InvalidInvestmentInfoPda);
-
 
     // Reject if investment has been deactivated
     require!(
@@ -525,17 +515,6 @@ pub fn add_investment_record(
     let recipient_hcoin_account = &ctx.accounts.recipient_hcoin_account;
 
 
-    // Validate info PDA
-    let (expected_info_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            info.investment_id.as_ref(),
-            info.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_info_pda, ErrorCode::InvalidInvestmentInfoPda);
-
 
     // Validate record PDA
     let (expected_record_pda, _bump) = Pubkey::find_program_address(
@@ -796,17 +775,6 @@ where
     let cache = &mut ctx.accounts.cache;
 
 
-    // Validate the expected info vault PDA
-    let (expected_info_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            info.investment_id.as_ref(),
-            info.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_info_pda, ErrorCode::InvalidInvestmentInfoPda);
-
 
      // Validate cache PDA with info.investment_id
     let (expected_cache_pda, _bump) = Pubkey::find_program_address(
@@ -988,17 +956,6 @@ where
     let info = &ctx.accounts.investment_info;
     let cache = &mut ctx.accounts.cache;    
 
-
-    // Validate the expected info PDA
-    let (expected_info_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            info.investment_id.as_ref(),
-            info.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_info_pda, ErrorCode::InvalidInvestmentInfoPda);
 
 
     // Validate the expected vault PDA
@@ -1203,17 +1160,6 @@ where
     let vault_token_account = &ctx.accounts.vault_token_account;
 
 
-    // Validate the expected info vault PDA
-    let (expected_info_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            info.investment_id.as_ref(),
-            info.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_info_pda, ErrorCode::InvalidInvestmentInfoPda);
-
 
     // Validate the profit_cache PDA
     let (expected_cache_pda, _) = Pubkey::find_program_address(
@@ -1241,8 +1187,8 @@ where
 
 
     // Prepare PDA signer seeds
-    let signer_seeds = &[
-        b"vault".as_ref(),
+    let signer_seeds: &[&[u8]] = &[
+        b"vault",
         info.investment_id.as_ref(),
         info.version.as_ref(),
         &[vault_bump],
@@ -1284,6 +1230,12 @@ where
     let mut successes: Vec<Pubkey> = vec![];
     let mut failures: Vec<Pubkey> = vec![];
 
+    let token_program = ctx.accounts.token_program.to_account_info();
+    let mint_info = ctx.accounts.mint.to_account_info();
+    let vault_info = vault.to_account_info();
+    let signer = Some(signer_seeds);
+    let decimals = mint.decimals;
+
     for entry in cache.entries.iter() {
         let recipient = entry.wallet;
         let recipient_ata = get_associated_token_address(&recipient, &mint.key());
@@ -1297,14 +1249,14 @@ where
 
         // transfer token to investors
         let result = transfer_token_checked(
-            ctx.accounts.token_program.to_account_info(),
+            token_program.clone(),
             vault_token_account.to_account_info(),
             recipient_ata_info.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            vault.to_account_info(),
-            Some(signer_seeds),
+            mint_info.clone(),
+            vault_info.clone(),
+            signer,
             entry.amount_usdt,
-            mint.decimals,
+            decimals,
         );
 
         match result {
@@ -1366,17 +1318,6 @@ where
     let vault_token_account = &ctx.accounts.vault_token_account;
     let mint = &ctx.accounts.mint;
 
-    
-    // Validate the expected info vault PDA
-    let (expected_info_pda, _bump) = Pubkey::find_program_address(
-        &[
-            b"investment",
-            info.investment_id.as_ref(),
-            info.version.as_ref(),
-        ],
-        ctx.program_id,
-    );
-    require_keys_eq!(info.key(), expected_info_pda, ErrorCode::InvalidInvestmentInfoPda);
 
 
     // Validate the profit_cache PDA
@@ -1455,6 +1396,12 @@ where
     let mut successes: Vec<Pubkey> = vec![];
     let mut failures: Vec<Pubkey> = vec![];
 
+    let token_program = ctx.accounts.token_program.to_account_info();
+    let mint_info = ctx.accounts.mint.to_account_info();
+    let vault_info = vault.to_account_info();
+    let signer = Some(signer_seeds);
+    let decimals = mint.decimals;
+
     for entry in cache.entries.iter() {
         let recipient = entry.wallet;
         let recipient_ata = get_associated_token_address(&recipient, &mint.key());
@@ -1467,14 +1414,14 @@ where
 
         // transfer token to investor
         let result = transfer_token_checked(
-            ctx.accounts.token_program.to_account_info(),
+            token_program.clone(),
             vault_token_account.to_account_info(),
             recipient_ata_info.to_account_info(),
-            ctx.accounts.mint.to_account_info(),
-            vault.to_account_info(),
-            Some(signer_seeds),
+            mint_info.clone(),
+            vault_info.clone(),
+            signer,
             entry.amount_hcoin,
-            mint.decimals,
+            decimals,
         );
 
         match result {
@@ -1514,8 +1461,6 @@ where
         signers: signer_keys.clone(),
     });
 
-
-    
 
     Ok(())
 }

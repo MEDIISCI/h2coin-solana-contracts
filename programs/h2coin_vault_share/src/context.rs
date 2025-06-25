@@ -183,6 +183,7 @@ pub struct UpdateWithdrawWallet<'info> {
 #[derive(Accounts)]
 #[instruction(batch_id: u16, record_id: u64, account_id: [u8; 15])]
 pub struct AddInvestmentRecords<'info> {
+    //── Investment Info ──────────────────────────────
     #[account(
         seeds = [
             b"investment",
@@ -193,6 +194,7 @@ pub struct AddInvestmentRecords<'info> {
     )]
     pub investment_info: Account<'info, InvestmentInfo>,
 
+    //── Investment record ────────────────────────────
     #[account(
         init,
         payer = payer,
@@ -209,14 +211,15 @@ pub struct AddInvestmentRecords<'info> {
     )]
     pub investment_record: Account<'info, InvestmentRecord>,
 
-    //── Mint ───────────────────────
+    //── Mint ─────────────────────────────────────────
     pub usdt_mint: Account<'info, Mint>,
     pub hcoin_mint: Account<'info, Mint>,
     
+    //── Recipient ATA (USDT) ─────────────────────────
     /// CHECK: recipient lamport target, manually validated
     pub recipient_account: UncheckedAccount<'info>,
 
-    //── Recipient ATA (USDT) ───────────────
+    //── Recipient ATA (USDT) ─────────────────────────
     #[account(
         init_if_needed,
         payer = payer,
@@ -226,7 +229,7 @@ pub struct AddInvestmentRecords<'info> {
     )]
     pub recipient_usdt_account: Account<'info, TokenAccount>,
 
-    //── Recipient ATA (H2coin) ───────────────
+    //── Recipient ATA (H2coin) ───────────────────────
     #[account(
         init_if_needed,
         payer = payer,
@@ -236,7 +239,7 @@ pub struct AddInvestmentRecords<'info> {
     )]
     pub recipient_hcoin_account: Account<'info, TokenAccount>,
 
-    //── Payer / Programs ────────────
+    //── Payer / Programs ─────────────────────────────
     #[account(mut)]
     pub payer: Signer<'info>,
     pub rent: Sysvar<'info, Rent>,
@@ -249,6 +252,15 @@ pub struct AddInvestmentRecords<'info> {
 #[derive(Accounts)]
 #[instruction(account_id: [u8; 15])]
 pub struct UpdateInvestmentRecordWallets<'info> {
+    //── Investment Info ──────────────────────────────
+    #[account(
+        seeds = [
+            b"investment",
+            investment_info.investment_id.as_ref(),
+            investment_info.version.as_ref()
+        ],
+        bump
+    )]
     pub investment_info: Account<'info, InvestmentInfo>,
 
     //── Mint ───────────────────────

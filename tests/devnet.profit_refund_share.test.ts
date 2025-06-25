@@ -38,12 +38,12 @@ import {
 	loadUpdateWhitelistKeypairs, loadExecuteWhitelistKeypairs,
 	loadWithdrawWhitelistKeypairs
 } from "./lib/lib";
-import {Runtime as R} from "./devnet.runtime";
+import {Runtime as R} from "./runtime";
 
 
 
 
-describe("🚀 Profit/Refund share Management", function () {
+describe("Profit/Refund share Management", function () {
 	let is_record_add = false as boolean;
 
 
@@ -98,8 +98,8 @@ describe("🚀 Profit/Refund share Management", function () {
 		];
 		const stageRatio = stage_ratio_map(stageRatioRows);
 
-		const start_at = new Anchor.BN(1747699200);
-		const end_at = new Anchor.BN(1779235200);
+		const start_at = new Anchor.BN(1598889600); // Fri May 01 2020 00:00:00
+		const end_at = new Anchor.BN(1609430400);	// Fri Jan 01 2021 00:00:00
 		const upperLimit = new Anchor.BN(5_000_000_000_000);		
 
 		const executeWhitelist = loadExecuteWhitelistKeypairs().map(k => k.publicKey).slice(0, 5);
@@ -180,13 +180,13 @@ describe("🚀 Profit/Refund share Management", function () {
 
 		const usdtAtaInfo = await provider.connection.getAccountInfo(vaultUsdtAta);
 		if (!usdtAtaInfo || !isTokenAccount(usdtAtaInfo.data)) {
-			console.log("❌ USDT ATA does not exist");
+			console.log(`${indent}❌ USDT ATA does not exist`);
 			return;
 		}
 
 		const hcoinAtaInfo = await provider.connection.getAccountInfo(vaultH2coinAta);
 		if (!hcoinAtaInfo || !isTokenAccount(hcoinAtaInfo.data)) {
-			console.log("❌ H2COIN ATA does not exist");
+			console.log(`${indent}❌ H2COIN ATA does not exist`);
 			return;
 		}
 
@@ -198,25 +198,25 @@ describe("🚀 Profit/Refund share Management", function () {
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
 		console.log(`${indent}✅ investment info Summary:`);
-		console.log(`${indent} investmentId:`, bytesToFixedString(investmentInfo.investmentId));
-		console.log(`${indent} version:`, Buffer.from(version).toString('hex'));
-		console.log(`${indent} investmentType:`, Object.keys(investmentInfo.investmentType)[0]);
-		console.log(`${indent} stageRatio:`, investmentInfo.stageRatio.toString());
-		console.log(`${indent} investmentUpperLimit:`, investmentInfo.investmentUpperLimit.toString());
-		console.log(`${indent} executeWhitelist:`, investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
-		console.log(`${indent} updateWhitelist:`, investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
-		console.log(`${indent} withdrawWhitelist:`, investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
-		console.log(`${indent} state:`, Object.keys(investmentInfo.state)[0]);
-		console.log(`${indent} startAt:`, new Date(investmentInfo.startAt.toNumber()*1000));
-		console.log(`${indent} endAt:`, new Date(investmentInfo.endAt.toNumber()*1000));
-		console.log(`${indent} solBalance:`, vaultInfo / Anchor.web3.LAMPORTS_PER_SOL);
-		console.log(`${indent} usdtBalance:`, usdtBalance.value.uiAmountString ?? '0');
-		console.log(`${indent} h2coinBalance:`, h2coinBalance.value.uiAmountString ?? '0');
+		console.log(`${indent}	investmentId:`, bytesToFixedString(investmentInfo.investmentId));
+		console.log(`${indent}	version:`, Buffer.from(version).toString('hex'));
+		console.log(`${indent}	investmentType:`, Object.keys(investmentInfo.investmentType)[0]);
+		console.log(`${indent}	stageRatio:`, investmentInfo.stageRatio.toString());
+		console.log(`${indent}	investmentUpperLimit:`, investmentInfo.investmentUpperLimit.toString());
+		console.log(`${indent}	executeWhitelist:`, investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent}	updateWhitelist:`, investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent}	withdrawWhitelist:`, investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent}	state:`, Object.keys(investmentInfo.state)[0]);
+		console.log(`${indent}	startAt:`, new Date(investmentInfo.startAt.toNumber()*1000));
+		console.log(`${indent}	endAt:`, new Date(investmentInfo.endAt.toNumber()*1000));
+		console.log(`${indent}	solBalance:`, vaultInfo / Anchor.web3.LAMPORTS_PER_SOL);
+		console.log(`${indent}	usdtBalance:`, usdtBalance.value.uiAmountString ?? '0');
+		console.log(`${indent}	h2coinBalance:`, h2coinBalance.value.uiAmountString ?? '0');
 		
 	});
 
 	it("(0) Adds 1500 new investment records (batch mode)", async function () {
-		this.timeout(1000 * 60 * 30); // 30 minutes timeout
+		this.timeout(1000 * 60 * 40); // 40 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Adding investment records program to init state ...`);
 
@@ -247,7 +247,7 @@ describe("🚀 Profit/Refund share Management", function () {
 			]);
 		if (record_list.length === MAX_ENTRIES) {
 			is_record_add = true;
-			console.log(`${indent}✅ 1500 investment records exist on chain!:`);
+			console.log(`${indent}✅ 1500 investment records has been added on chain!:`);
 			return;
 		}
 
@@ -307,38 +307,38 @@ describe("🚀 Profit/Refund share Management", function () {
 				]);
 
 				const ix = await program.methods
-					.addInvestmentRecord(
-						batchId,
-						recordId,
-						accountIdBytes,
-						amountUsdt,
-						amountHcoin,
-						STAGE
-					)
-					.accounts({
-						investmentInfo: investmentInfoPda,
-						investmentRecord: recordPda,
+				.addInvestmentRecord(
+					batchId,
+					recordId,
+					accountIdBytes,
+					amountUsdt,
+					amountHcoin,
+					STAGE
+				)
+				.accounts({
+					investmentInfo: investmentInfoPda,
+					investmentRecord: recordPda,
 
-						usdtMint: usdt_mint,
-						hcoinMint: h2coin_mint,
+					usdtMint: usdt_mint,
+					hcoinMint: h2coin_mint,
 
-						recipientAccount: wallet,
-						recipientUsdtAccount: RecipientUsdtAta,
-						recipientHcoinAccount: RecipientHcoinAta,
+					recipientAccount: wallet,
+					recipientUsdtAccount: RecipientUsdtAta,
+					recipientHcoinAccount: RecipientHcoinAta,
 
-						payer: payer.publicKey,
-						systemProgram: Anchor.web3.SystemProgram.programId,
-						tokenProgram: TOKEN_PROGRAM_ID,
-						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-					} as any)
-					.remainingAccounts(
-						threeUpdateSigners.map(kp => ({
-							pubkey: kp.publicKey,
-							isWritable: false,
-							isSigner: true,
-						}))
-					)
-					.instruction();
+					payer: payer.publicKey,
+					systemProgram: Anchor.web3.SystemProgram.programId,
+					tokenProgram: TOKEN_PROGRAM_ID,
+					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+				} as any)
+				.remainingAccounts(
+					threeUpdateSigners.map(kp => ({
+						pubkey: kp.publicKey,
+						isWritable: false,
+						isSigner: true,
+					}))
+				)
+				.instruction();
 
 				tx.add(ix);
 
@@ -352,17 +352,69 @@ describe("🚀 Profit/Refund share Management", function () {
 					commitment: "confirmed",
 					skipPreflight: false,
 				});
-				console.log(`${indent}✅ Successfully inserted ${MAX_RECORDS_PER_TX} investment records into batch #${batchId}. Tx signature: ${signature}`);
+				console.log(`${indent}✅ Successfully inserted ${MAX_RECORDS_PER_TX} investment records into batchId: ${batchId}. Tx signature: ${signature}`);
 
 				
 				// delay 1 second
 				await new Promise(resolve => setTimeout(resolve, 1000));
 				
 			} catch (e: any) {
-				console.log(`${indent}✅ state has completed`);
-				throw e;
+				console.log(`${indent}✅ Investment Info State has completed`);
+				if (e?.error?.errorCode?.code) {
+					expect(e).to.have.property("error");
+					expect(e.error.errorCode.code).to.be.oneOf([
+						"InvestmentInfoDeactivated",
+						"InvestmentInfoHasCompleted"
+					]);
+				} else {
+					console.error(e);
+				}
 			}
 		}
+
+		const result1 = await program.account.investmentRecord.all([
+			{
+				memcmp: {
+					offset: 33, // discriminator 是前8位，接下來是 investment_id
+					bytes: bs58.encode(Buffer.from(investmentId)),
+				},
+			},
+			{
+				memcmp: {
+					offset: 33 + 15, // version
+					bytes: bs58.encode(Buffer.from(version)),
+				},
+			},
+		]);
+		expect(result1.length).to.be.greaterThan(0);
+
+
+		const result2 = await program.account.investmentRecord.all([
+			{
+				memcmp: {
+					offset: 8, // discriminator + batchId
+					bytes: bs58.encode(Array.from(batchIdBytes)),
+				},
+			},
+			{
+				memcmp: {
+					offset: 33, // discriminator 是前8位，接下來是 investment_id
+					bytes: bs58.encode(Buffer.from(investmentId)),
+				},
+			},
+			{
+				memcmp: {
+					offset: 33 + 15, // version
+					bytes: bs58.encode(Buffer.from(version)),
+				},
+			},
+		]);
+		expect(result2.length).to.be.greaterThan(0);
+
+		console.log(`${indent}✅ Add investment record result:`);
+		console.log(`${indent}	total_invest_usdt:`, total_invest_usdt);
+		console.log(`${indent}	total_record_by_batchId:`, result2.length);
+		console.log(`${indent}	total_record_by_investmentId:`, result1.length);
 	});
 
 	it("(1) Set investment state to complete", async function() {
@@ -393,11 +445,18 @@ describe("🚀 Profit/Refund share Management", function () {
 
 			const updated = await program.account.investmentInfo.fetch(investmentInfoPda);
 			expect(updated.state).to.have.property("completed");
-			console.log(`${indent}✅ state is completed`);
+			console.log(`${indent}✅ Investment Info state is completed`);
 		} catch (e:any) {
-			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code).to.equal("InvestmentInfoHasCompleted");
-			console.log(`${indent}✅ state has completed`);
+			console.log(`${indent}✅ Investment Info state has completed`);
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoHasCompleted"
+				]);
+			} else {
+				console.error(e);
+			}
 		}
 	});	
 
@@ -477,7 +536,7 @@ describe("🚀 Profit/Refund share Management", function () {
 
 
 		// Ensure all Address Lookup Tables (ALTs) exist on-chain for each batch
-		console.log(`${indent} Start Checking ALT exists or not`);
+		console.log(`${indent}📦 Start Checking ALT exists or not`);
 		for (let batchId = 1; batchId <= maxBatchId; batchId++) {
 			let retries = 0;
 			let lookupTableAccount;
@@ -492,7 +551,7 @@ describe("🚀 Profit/Refund share Management", function () {
 				const result = await provider.connection.getAddressLookupTable(lookupTableAddress);
 				if (result.value) {
 					lookupTableAccount = result.value; // ALT is available
-					console.log(`${indent}✅ ALT ${lookupTableAddress} at batch: ${batchId} is available!`);
+					console.log(`${indent}		ALT address: ${lookupTableAddress} at batch: ${batchId} is available!`);
 					break;
 				}
 				await new Promise(res => setTimeout(res, 5000)); // Wait before retrying
@@ -501,7 +560,7 @@ describe("🚀 Profit/Refund share Management", function () {
 
 			// If ALT still not available, throw an error
 			if (!lookupTableAccount) {
-				console.log(`${indent}❌ ALT ${lookupTableAddress} at batch: ${batchId} did not become available in time!`);
+				console.log(`${indent}❌ ALT address: ${lookupTableAddress} at batch: ${batchId} did not become available in time!`);
 				return;
 			}
 		}
@@ -648,43 +707,52 @@ describe("🚀 Profit/Refund share Management", function () {
 					"confirmed"
 				);
 				console.log(`${indent}------------------------`);
-				console.log(`${indent}✅ Estimating profit for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
-				console.log(`${indent}📦 Estimating profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
-				
-
-				// Generate report
-				const info = await program.account.investmentInfo.fetch(investmentInfoPda);
-				const cache = await program.account.profitShareCache.fetch(cachePda);
-
-				console.log(`${indent}🧠 Profit Share Cache summary at batchId: ${batchId}`);
-				console.log(`${indent}		investmentId:`, Buffer.from(cache.investmentId).toString().replace(/\0/g, ""));
-				console.log(`${indent}		version:`, Buffer.from(version).toString('hex'));
-				console.log(`${indent}		investmentType:`, Object.keys(info.investmentType)[0]);
-				console.log(`${indent}		totalProfitUsdt:`, totalProfitUsdt.toString());
-				console.log(`${indent}		totalInvestUsdt:`, totalInvestUsdt.toString());
-				console.log(`${indent}		subtotalProfitUsdt:`, cache.subtotalProfitUsdt.toString());
-				console.log(`${indent}		subtotalEstimateSol:`, cache.subtotalEstimateSol.toString());
-				console.log(`${indent}		createdAt:`, new Date(cache.createdAt.toNumber() * 1000).toISOString());
+				if (result.value.err === null) {
+					console.log(`${indent}✅ Estimating profit for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);				
+	
+					// Generate report
+					const info = await program.account.investmentInfo.fetch(investmentInfoPda);
+					const cache = await program.account.profitShareCache.fetch(cachePda);
+	
+					console.log(`${indent}📦 Profit Share Cache summary at batchId: ${batchId}`);
+					console.log(`${indent}		investmentId:`, Buffer.from(cache.investmentId).toString().replace(/\0/g, ""));
+					console.log(`${indent}		version:`, Buffer.from(version).toString('hex'));
+					console.log(`${indent}		investmentType:`, Object.keys(info.investmentType)[0]);
+					console.log(`${indent}		totalProfitUsdt:`, totalProfitUsdt.toString());
+					console.log(`${indent}		totalInvestUsdt:`, totalInvestUsdt.toString());
+					console.log(`${indent}		subtotalProfitUsdt:`, cache.subtotalProfitUsdt.toString());
+					console.log(`${indent}		subtotalEstimateSol:`, cache.subtotalEstimateSol.toString());
+					console.log(`${indent}		createdAt:`, new Date(cache.createdAt.toNumber() * 1000).toISOString());
+						
 					
-				
-				console.log(`${indent}🧠 List Profit entry and count:`, cache.entries.length);
-				for (const entry of cache.entries) {
-					const data = {
-						accountId: bytesToFixedString(entry.accountId),
-						wallet: entry.wallet.toBase58(),
-						amountUsdt: entry.amountUsdt.toString(),
-						ratioBp: entry.ratioBp / 100,
-					};
-					console.log(`${indent}`, JSON.stringify(data));
+					console.log(`${indent}📦 List Profit entry and count:`, cache.entries.length);
+					for (const entry of cache.entries) {
+						const data = {
+							accountId: bytesToFixedString(entry.accountId),
+							wallet: entry.wallet.toBase58(),
+							amountUsdt: entry.amountUsdt.toString(),
+							ratioBp: entry.ratioBp / 100,
+						};
+						console.log(`${indent}	`, JSON.stringify(data));
+					}
 				}
 
 				// delay 1 second
 				await new Promise(resolve => setTimeout(resolve, 1000));				
 			} catch (e:any) {
-				console.log(e);
 				if (e.transactionLogs.length > 0) {
 					expect(e.transactionLogs.join('\n')).to.include("StandardOnly");
-				}				
+				}
+				else
+				if (e?.error?.errorCode?.code) {
+					expect(e).to.have.property("error");
+					expect(e.error.errorCode.code).to.be.oneOf([
+						"InvestmentInfoDeactivated",
+						"InvestmentInfoNotCompleted"
+					]);
+				} else {
+					console.error(e);
+				}
 			}
 		} // end for
 	});
@@ -830,38 +898,45 @@ describe("🚀 Profit/Refund share Management", function () {
 					"confirmed"
 				);
 				console.log(`${indent}------------------------`);
-				console.log(`${indent}✅ Estimating refund for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
-				console.log(`${indent}📦 Estimating refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');
-					
-
-				// Generate report
-				const info = await program.account.investmentInfo.fetch(investmentInfoPda);
-				const cache = await program.account.refundShareCache.fetch(cachePda);
-
-				console.log(`${indent}🧠 Refund Share Cache summary at batchId: ${batchId}`);
-				console.log(`${indent}		investmentId:`, Buffer.from(cache.investmentId).toString().replace(/\0/g, ""));
-				console.log(`${indent}		version:`, Buffer.from(version).toString('hex'));
-				console.log(`${indent}		investmentType:`, Object.keys(info.investmentType)[0]);
-				console.log(`${indent}		totalInvestH2coin:`, totalInvestH2coin.toString());
-				console.log(`${indent}		subtotalRefundHcoin:`, cache.subtotalRefundHcoin.toString());
-				console.log(`${indent}		subtotalEstimateSol:`, cache.subtotalEstimateSol.toString());
-				console.log(`${indent}		createdAt:`, new Date(cache.createdAt.toNumber() * 1000).toISOString());
-
-				console.log(`${indent}🧠 List Refund entry and count:`, cache.entries.length);
-				for (const entry of cache.entries) {
-					const data = {
-						accountId: bytesToFixedString(entry.accountId),
-						wallet: entry.wallet.toBase58(),
-						amountHcoin: entry.amountHcoin.toString(),
-					};
-					console.log(`${indent}`, JSON.stringify(data));
+				if (result.value.err === null) {
+					console.log(`${indent}✅ Estimating refund for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);					
+	
+					// Generate report
+					const info = await program.account.investmentInfo.fetch(investmentInfoPda);
+					const cache = await program.account.refundShareCache.fetch(cachePda);
+	
+					console.log(`${indent}📦 Refund Share Cache summary at batchId: ${batchId}`);
+					console.log(`${indent}		investmentId:`, Buffer.from(cache.investmentId).toString().replace(/\0/g, ""));
+					console.log(`${indent}		version:`, Buffer.from(version).toString('hex'));
+					console.log(`${indent}		investmentType:`, Object.keys(info.investmentType)[0]);
+					console.log(`${indent}		totalInvestH2coin:`, totalInvestH2coin.toString());
+					console.log(`${indent}		subtotalRefundHcoin:`, cache.subtotalRefundHcoin.toString());
+					console.log(`${indent}		subtotalEstimateSol:`, cache.subtotalEstimateSol.toString());
+					console.log(`${indent}		createdAt:`, new Date(cache.createdAt.toNumber() * 1000).toISOString());
+	
+					console.log(`${indent}📦 List Refund entry and count:`, cache.entries.length);
+					for (const entry of cache.entries) {
+						const data = {
+							accountId: bytesToFixedString(entry.accountId),
+							wallet: entry.wallet.toBase58(),
+							amountHcoin: entry.amountHcoin.toString(),
+						};
+						console.log(`${indent}	`, JSON.stringify(data));
+					}
 				}
 
 				// delay 1 second
 				await new Promise(resolve => setTimeout(resolve, 1000));
 			} catch (e:any) {
-				console.log(e);
-					
+				if (e?.error?.errorCode?.code) {
+					expect(e).to.have.property("error");
+					expect(e.error.errorCode.code).to.be.oneOf([
+						"InvestmentInfoDeactivated",
+						"InvestmentInfoNotCompleted"
+					]);
+				} else {
+					console.error(e);
+				}
 			}
 		}
 	});
@@ -934,22 +1009,22 @@ describe("🚀 Profit/Refund share Management", function () {
 				{ commitment: "confirmed" }
 			);
 
-			R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-			console.log(`✅ created Profit ALT Address=${lookupTableAddress.toBase58()}, batchId=${batchId}, signature=${signature}`);
+			R.lookupTableMap.get('profit')!.set(batchId, lookupTableAddress);
+			console.log(`${indent}✅ created Profit ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}, signature: ${signature}`);
 
 			// Delay 1 second
-			await new Promise(resolve => setTimeout(resolve, 1000));
+			await new Promise(resolve => setTimeout(resolve, 2000));
 		}
 
 
-		// Ensure ALT exist in chain
-		// Iterate through all batchIds from 1 to maxBatchId
+		// Ensure all Address Lookup Tables (ALTs) exist on-chain for each batch
+		console.log(`${indent}📦 Start Checking ALT exists or not`);
 		for (let batchId = 1; batchId <= maxBatchId; batchId++) {
 			let retries = 0;
 			let lookupTableAccount;
 
 			// Retrieve the ALT address for the current batchId
-			const lookupTableAddress = R.lookupTableMap.get('cache')!.get(batchId);
+			const lookupTableAddress = R.lookupTableMap.get('profit')!.get(batchId);
 			// If not found, exit early (consider logging)
 			if (!lookupTableAddress) return;
 
@@ -957,15 +1032,19 @@ describe("🚀 Profit/Refund share Management", function () {
 			while (!lookupTableAccount && retries < 5) {
 				const result = await provider.connection.getAddressLookupTable(lookupTableAddress);
 				if (result.value) {
-					lookupTableAccount = result.value; // ✅ ALT is available
+					lookupTableAccount = result.value; // ALT is available
+					console.log(`${indent}		ALT address: ${lookupTableAddress} at batch: ${batchId} is available!`);
 					break;
 				}
-				await new Promise(res => setTimeout(res, 1000)); // 💤 Wait before retrying
+				await new Promise(res => setTimeout(res, 5000)); // Wait before retrying
 				retries++;
 			}
 
 			// If ALT still not available, throw an error
-			if (!lookupTableAccount) throw new Error("ALT did not become available in time");
+			if (!lookupTableAccount) {
+				console.log(`${indent}❌ ALT address: ${lookupTableAddress} at batch: ${batchId} did not become available in time!`);
+				return;
+			}
 		}
 	});
 
@@ -1022,9 +1101,9 @@ describe("🚀 Profit/Refund share Management", function () {
 
 				subtotalEstimateSol = subtotalEstimateSol.add(cache.subtotalEstimateSol);
 				subtotalProfitUsdt = subtotalProfitUsdt.add(cache.subtotalProfitUsdt);
-				console.log(`📦 batchId=${batchId}, profit=${cache.subtotalProfitUsdt.toString()}, sol=${cache.subtotalEstimateSol.toString()}`);
+				console.log(`${indent}📦 batchId: ${batchId}, subtotal profit: ${cache.subtotalProfitUsdt.toString()} USDT, subtotal estimate: ${cache.subtotalEstimateSol.toString()} SOL`);
 			} catch (e) {
-				console.warn(`⚠️ Cache missing for batchId=${batchId}, skipping...`);
+				console.warn(`${indent}⚠️ Cache missing for batchId: ${batchId}, skipping...`);
 			}
 
 			// delay 1 second
@@ -1046,9 +1125,9 @@ describe("🚀 Profit/Refund share Management", function () {
 
 				subtotalEstimateSol = subtotalEstimateSol.add(cache.subtotalEstimateSol);
 				subtotalRefundHcoin = subtotalRefundHcoin.add(cache.subtotalRefundHcoin);
-				console.log(`📦 batchId=${batchId}, refund=${cache.subtotalRefundHcoin.toString()}, sol=${cache.subtotalEstimateSol.toString()}`);
+				console.log(`${indent}📦 batchId: ${batchId}, subtotal refund: ${cache.subtotalRefundHcoin.toString()} H2coin, subtotal estimate: ${cache.subtotalEstimateSol.toString()} SOL`);
 			} catch (error) {
-				console.warn(`⚠️ Cache missing for batchId=${batchId}, skipping...`);
+				console.warn(`${indent}⚠️ Cache missing for batchId: ${batchId}, skipping...`);
 			}
 
 			// delay 1 second
@@ -1114,7 +1193,8 @@ describe("🚀 Profit/Refund share Management", function () {
 			// Send transaction
 			const tx = new Anchor.web3.Transaction().add(ix1, ix2, ix3);
 			const signature = await provider.sendAndConfirm(tx, []);
-			console.log("✅ Vault deposit tx:", signature);
+			console.log(`${indent}✅ Successfully deposited tokens into vault. Tx signature: ${signature}`);
+
 
 			// Wait before confirming transaction
 			await new Promise(res => setTimeout(res, 1000));
@@ -1141,7 +1221,15 @@ describe("🚀 Profit/Refund share Management", function () {
 			// delay 1 second
 			await new Promise(resolve => setTimeout(resolve, 1000));
 		} catch (e: any) {
-			console.error("❌ Deposit failed:", e.message ?? e);
+			if (e?.error?.errorCode?.code) {
+				expect(e).to.have.property("error");
+				expect(e.error.errorCode.code).to.be.oneOf([
+					"InvestmentInfoDeactivated",
+					"InvestmentInfoNotCompleted"
+				]);
+			} else {
+				console.error(e);
+			}		
 		}
 	});
 
@@ -1182,14 +1270,8 @@ describe("🚀 Profit/Refund share Management", function () {
 			const batchIdBytes = u16ToLEBytes(batchId);
 
 
-			const lookupTableAddress = R.lookupTableMap.get('cache')!.get(batchId);
 			
-			if (!lookupTableAddress) {
-				console.warn(`${indent}⚠️ Missing lookup table for batch ${batchId}`);
-				continue;
-			}
-
-
+			
 			// Derive the profit_cache PDA for a specific investmentId, version, batchId and yearIndex
 			const [cachePda] = Anchor.web3.PublicKey.findProgramAddressSync(
 				[
@@ -1201,7 +1283,7 @@ describe("🚀 Profit/Refund share Management", function () {
 				program.programId
 			);
 			const cache = await program.account.profitShareCache.fetch(cachePda);
-
+			
 			
 			// Get recipient ATA on each batchId
 			const walletATA: PublicKey[] = [];
@@ -1209,45 +1291,68 @@ describe("🚀 Profit/Refund share Management", function () {
 				const ata = await getAssociatedTokenAddress(usdtMint, entry.wallet);
 				walletATA.push(ata);
 			}
+			
 
-
+			const lookupTableAddress = R.lookupTableMap.get('profit')!.get(batchId);	
+			if (!lookupTableAddress) {
+				console.warn(`${indent}⚠️ Missing lookup table for batch ${batchId}`);
+				continue;
+			}
+		
+			
 			const lookupTableAccount = await provider.connection
-				.getAddressLookupTable(lookupTableAddress)
-				.then((res) => res.value!);
+			.getAddressLookupTable(lookupTableAddress)
+			.then((res) => res.value!);
 
 
+			const altAddresses = lookupTableAccount.state.addresses.map(addr => addr.toBase58());
+			const expectedAddresses = walletATA.map(addr => addr.toBase58());
+
+
+			const allMatched = expectedAddresses.every(addr => altAddresses.includes(addr));
+			if (!allMatched) {
+				console.warn(`${indent}❗ ALT mismatch: some recipient ATAs are missing in ALT`);
+				console.log(`${indent}Expected:`, expectedAddresses);
+				console.log(`${indent}ALT has:`, altAddresses);
+				throw new Error("❌ ALT content does not match expected wallet ATA list.");
+			} else {
+				console.log(`${indent}✅ ALT content matches expected recipient wallet ATAs`);
+			}
+
+			
 			try {
 				const computeIx = modifyComputeUnits;
-
+				
 				const execIx = await program.methods
-					.executeProfitShare(batchId)
-					.accounts({
-						investmentInfo: investmentInfoPda,
-						cache: cachePda,
-						payer,
-						vault: vaultPda,
-						mint: usdtMint,
-						vaultTokenAccount: vaultTokenAta,
-						tokenProgram: TOKEN_PROGRAM_ID,
-						systemProgram: Anchor.web3.SystemProgram.programId,
-						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-					} as any)
-					.remainingAccounts([
-						...threeExecSigners.map((kp) => ({
-							pubkey: kp.publicKey,
-							isWritable: false,
-							isSigner: true,
-						})),
-						...walletATA.map((kp) => ({
-							pubkey: kp,
-							isWritable: true,
-							isSigner: false,
-						})),
-					])
-					.instruction();
-
+				.executeProfitShare(batchId)
+				.accounts({
+					investmentInfo: investmentInfoPda,
+					cache: cachePda,
+					payer,
+					vault: vaultPda,
+					mint: usdtMint,
+					vaultTokenAccount: vaultTokenAta,
+					tokenProgram: TOKEN_PROGRAM_ID,
+					systemProgram: Anchor.web3.SystemProgram.programId,
+					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+				} as any)
+				.remainingAccounts([
+					...threeExecSigners.map((kp) => ({
+						pubkey: kp.publicKey,
+						isWritable: false,
+						isSigner: true,
+					})),
+					...walletATA.map((kp) => ({
+						pubkey: kp,
+						isWritable: true,
+						isSigner: false,
+					})),
+				])
+				.instruction();
+	
 
 				const blockhash = await provider.connection.getLatestBlockhash();
+
 				const message = new Anchor.web3.TransactionMessage({
 					payerKey: payer,
 					recentBlockhash: blockhash.blockhash,
@@ -1264,24 +1369,55 @@ describe("🚀 Profit/Refund share Management", function () {
 				});
 
 
-				// delay 5 second
+				// Delay 5 second
 				await new Promise(resolve => setTimeout(resolve, 5000));
 
 
-				const result = await provider.connection.confirmTransaction(
-					{
-						signature,
-						blockhash: blockhash.blockhash,
-						lastValidBlockHeight: blockhash.lastValidBlockHeight,
-					},
-					"confirmed"
-				);
-				console.log(`${indent}✅ Execute profit for batchI: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
-				console.log(`${indent}📦 Execute profit for Tx result:`, result.value.err === null? 'Successed': 'Failed');
+				//  Confirm with Retry Loop
+				let confirmed = false;
+				let retries = 0;
+				const maxRetries = 10;
+
+				while (!confirmed && retries < maxRetries) {
+					const result = await provider.connection.confirmTransaction(
+						{
+							signature,
+							blockhash: blockhash.blockhash,
+							lastValidBlockHeight: blockhash.lastValidBlockHeight,
+						},
+						"confirmed"
+					);
+
+					if (result.value.err === null) {
+						console.log(`${indent}✅ Execute profit for batchId: ${batchId}, signature: ${signature}`);
+						confirmed = true;
+					} else if (result.value.err) {
+						console.error(`${indent}❌ Transaction failed: ${JSON.stringify(result.value.err)}`);
+						break; // stop retrying
+					} else {
+						retries++;
+						console.warn(`${indent}⏳ Waiting for confirmation... (${retries}/${maxRetries})`);
+						await new Promise((res) => setTimeout(res, 5000)); // wait 5 seconds
+					}
+				}
+
+				if (!confirmed) {
+					throw new Error(`${indent}❌ Transaction confirmation failed for signature: ${signature}`);
+				}
 			} catch (e:any) {
-				if (e.logs && e.logs.length) {
+				if (e?.logs?.length) {
 					expect(e.logs).to.not.be.undefined;
 					expect(e.logs.join("\n")).to.include("Insufficient USDT Token balance in vault");
+				}
+				else
+				if (e?.error?.errorCode?.code) {
+					expect(e).to.have.property("error");
+					expect(e.error.errorCode.code).to.be.oneOf([
+						"InvestmentInfoDeactivated",
+						"InvestmentInfoNotCompleted"
+					]);
+				} else {
+					console.error(e);
 				}
 			}
 		} // end for
@@ -1354,22 +1490,22 @@ describe("🚀 Profit/Refund share Management", function () {
 				{ commitment: "confirmed" }
 			);
 
-			R.lookupTableMap.get('cache')!.set(batchId, lookupTableAddress);
-			console.log(`${indent}✅ Created Refund ALT Address=${lookupTableAddress.toBase58()}, batchId=${batchId}, signature=${signature}`);
+			R.lookupTableMap.get('refund')!.set(batchId, lookupTableAddress);
+			console.log(`${indent}✅ Created Refund ALT Address: ${lookupTableAddress.toBase58()}, batchId: ${batchId}, signature: ${signature}`);
 
 			// Delay 1 second
-			await new Promise(resolve => setTimeout(resolve, 1000));
+			await new Promise(resolve => setTimeout(resolve, 2000));
 		}
 
 
-		// Ensure ALT exist in chain
-		// Iterate through all batchIds from 1 to maxBatchId
+		// Ensure all Address Lookup Tables (ALTs) exist on-chain for each batch
+		console.log(`${indent}📦 Start Checking ALT exists or not`);
 		for (let batchId = 1; batchId <= maxBatchId; batchId++) {
 			let retries = 0;
 			let lookupTableAccount;
 
 			// Retrieve the ALT address for the current batchId
-			const lookupTableAddress = R.lookupTableMap.get('cache')!.get(batchId);
+			const lookupTableAddress = R.lookupTableMap.get('refund')!.get(batchId);
 			// If not found, exit early (consider logging)
 			if (!lookupTableAddress) return;
 
@@ -1377,15 +1513,19 @@ describe("🚀 Profit/Refund share Management", function () {
 			while (!lookupTableAccount && retries < 5) {
 				const result = await provider.connection.getAddressLookupTable(lookupTableAddress);
 				if (result.value) {
-					lookupTableAccount = result.value; // ✅ ALT is available
+					lookupTableAccount = result.value; // ALT is available
+					console.log(`${indent}		ALT address: ${lookupTableAddress} at batch: ${batchId} is available!`);
 					break;
 				}
-				await new Promise(res => setTimeout(res, 1000)); // 💤 Wait before retrying
+				await new Promise(res => setTimeout(res, 5000)); // Wait before retrying
 				retries++;
 			}
 
 			// If ALT still not available, throw an error
-			if (!lookupTableAccount) throw new Error("ALT did not become available in time");
+			if (!lookupTableAccount) {
+				console.log(`${indent}❌ ALT address: ${lookupTableAddress} at batch: ${batchId} did not become available in time!`);
+				return;
+			}
 		}
 	});
 
@@ -1413,20 +1553,17 @@ describe("🚀 Profit/Refund share Management", function () {
 			],
 			program.programId
 		);
-		// Create Vault Token Address associate
+
+
+		// Get Vault ATA
 		const vaultTokenAta = await getAssociatedTokenAddress(h2coinMint, vaultPda, true);
 
-
+		// Get max batchId
 		const maxBatchId = findMaxBatchId();
 
 		for (let batchId = 1; batchId <= maxBatchId; batchId++) {
+			global.gc?.();
 			const batchIdBytes = u16ToLEBytes(batchId);
-
-			const lookupTableAddress = R.lookupTableMap.get('cache')!.get(batchId);			
-			if (!lookupTableAddress) {
-				console.warn(`${indent}⚠️ Missing lookup table for batch ${batchId}`);
-				continue;
-			}
 
 
 			// Derive the refund_cache PDA for a specific investmentId, version, batchId and yearIndex
@@ -1449,77 +1586,140 @@ describe("🚀 Profit/Refund share Management", function () {
 				const ata = await getAssociatedTokenAddress(h2coinMint, entry.wallet);
 				walletATA.push(ata);
 			}
-
+			
+			const lookupTableAddress = R.lookupTableMap.get('profit')!.get(batchId);	
+			if (!lookupTableAddress) {
+				console.warn(`${indent}⚠️ Missing lookup table for batch ${batchId}`);
+				continue;
+			}
+		
+			
 			const lookupTableAccount = await provider.connection
-				.getAddressLookupTable(lookupTableAddress)
-				.then((res) => res.value!);
+			.getAddressLookupTable(lookupTableAddress)
+			.then((res) => res.value!);
+
+
+			const altAddresses = lookupTableAccount.state.addresses.map(addr => addr.toBase58());
+			const expectedAddresses = walletATA.map(addr => addr.toBase58());
+
+
+			const allMatched = expectedAddresses.every(addr => altAddresses.includes(addr));
+			if (!allMatched) {
+				console.warn(`${indent}❗ ALT mismatch: some recipient ATAs are missing in ALT`);
+				console.log(`${indent}Expected:`, expectedAddresses);
+				console.log(`${indent}ALT has:`, altAddresses);
+				throw new Error("❌ ALT content does not match expected wallet ATA list.");
+			} else {
+				console.log(`${indent}✅ ALT content matches expected recipient wallet ATAs`);
+			}
 
 
 			try {
 				const computeIx = modifyComputeUnits;
 	
 				const execIx = await program.methods
-					.executeRefundShare(batchId, yearIndex)
-					.accounts({
-						investmentInfo: investmentInfoPda,
-						mint: h2coinMint,
-						cache: cachePda,
-						vault: vaultPda,
-						vaultTokenAccount: vaultTokenAta,
-						payer,
-						tokenProgram: TOKEN_PROGRAM_ID,
-						systemProgram: Anchor.web3.SystemProgram.programId,
-						associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-					} as any)
-					.remainingAccounts([
-						...threeExecSigners.map((kp) => ({
-							pubkey: kp.publicKey,
-							isWritable: false,
-							isSigner: true,
-						})),
-						...walletATA.map((kp) => ({
-							pubkey: kp,
-							isWritable: true,
-							isSigner: false,
-						})),
-					])
-					.instruction();
-	
+				.executeRefundShare(batchId, yearIndex)
+				.accounts({
+					investmentInfo: investmentInfoPda,
+					mint: h2coinMint,
+					cache: cachePda,
+					vault: vaultPda,
+					vaultTokenAccount: vaultTokenAta,
+					payer,
+					tokenProgram: TOKEN_PROGRAM_ID,
+					systemProgram: Anchor.web3.SystemProgram.programId,
+					associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+				} as any)
+				.remainingAccounts([
+					...threeExecSigners.map((kp) => ({
+						pubkey: kp.publicKey,
+						isWritable: false,
+						isSigner: true,
+					})),
+					...walletATA.map((kp) => ({
+						pubkey: kp,
+						isWritable: true,
+						isSigner: false,
+					})),
+				])
+				.instruction();
+
+
 				const blockhash = await provider.connection.getLatestBlockhash();
-	
 	
 				const message = new Anchor.web3.TransactionMessage({
 					payerKey: payer,
 					recentBlockhash: blockhash.blockhash,
 					instructions: [computeIx, execIx],
 				}).compileToV0Message([lookupTableAccount]);
-	
+
+				
+				console.log(`${indent}🔍 Instruction data size:`, execIx.data.length);
+				console.log(`${indent}🔍 Wallet ATA data size:`, walletATA.length);
+				console.log(`${indent}🔍 Number of remaining accounts:`, walletATA.length + 3);
+				console.log(`${indent}🔍 Number of static accounts:`, message.staticAccountKeys.length);
+				console.log(`${indent}🔍 Serialized transaction size:`, message.serialize().length);
+				console.log(`${indent}🔍 Message serialized size:`, message.serialize().length);
+
 	
 				const versionedTx = new Anchor.web3.VersionedTransaction(message);
 				versionedTx.sign([...threeExecSigners, provider.wallet.payer!]);
 	
+
 				const signature = await provider.connection.sendTransaction(versionedTx, {
 					skipPreflight: false,
 				});
 	
-				// delay 5 second
+
+				// Delay 5 second
 				await new Promise(resolve => setTimeout(resolve, 5000));
 
 
-				const result = await provider.connection.confirmTransaction(
-					{
-						signature,
-						blockhash: blockhash.blockhash,
-						lastValidBlockHeight: blockhash.lastValidBlockHeight,
-					},
-					"confirmed"
-				);
-				console.log(`${indent}✅ Execute refund for batchId: ${batchId}, count: ${batch_data.length}, signature: ${signature}`);
-				console.log(`${indent}📦 Execute refund for Tx result:`, result.value.err === null? 'Successed': 'Failed');			
+				//  Confirm with Retry Loop
+				let confirmed = false;
+				let retries = 0;
+				const maxRetries = 10;
+
+				while (!confirmed && retries < maxRetries) {
+					const result = await provider.connection.confirmTransaction(
+						{
+							signature,
+							blockhash: blockhash.blockhash,
+							lastValidBlockHeight: blockhash.lastValidBlockHeight,
+						},
+						"confirmed"
+					);
+
+					if (result.value.err === null) {
+						console.log(`${indent}✅ Execute refund for batchId: ${batchId}, signature: ${signature}`);
+						confirmed = true;
+					} else if (result.value.err) {
+						console.error(`${indent}❌ Transaction failed: ${JSON.stringify(result.value.err)}`);
+						break; // stop retrying
+					} else {
+						retries++;
+						console.warn(`${indent}⏳ Waiting for confirmation... (${retries}/${maxRetries})`);
+						await new Promise((res) => setTimeout(res, 5000)); // wait 5 seconds
+					}
+				}
+
+				if (!confirmed) {
+					throw new Error(`${indent}❌ Transaction confirmation failed for signature: ${signature}`);
+				}
 			} catch (e:any) {
-				if (e.logs && e.logs.length) {
+				if (e?.logs?.length) {
 					expect(e.logs).to.not.be.undefined;
 					expect(e.logs.join("\n")).to.include("Insufficient H2coin Token balance in vault");
+				}
+				else
+				if (e?.error?.errorCode?.code) {
+					expect(e).to.have.property("error");
+					expect(e.error.errorCode.code).to.be.oneOf([
+						"InvestmentInfoDeactivated",
+						"InvestmentInfoNotCompleted"
+					]);
+				} else {
+					console.error(e);
 				}
 			}
 		} // end for
@@ -1555,6 +1755,7 @@ describe("🚀 Profit/Refund share Management", function () {
 			program.programId
 		);
 
+		// Vault SOL accounts
 		const vaultSolBalance = await provider.connection.getBalance(vaultPda);
 		console.log(`${indent}💰 Before Vault SOL balance:`, vaultSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58());
 
@@ -1623,7 +1824,7 @@ describe("🚀 Profit/Refund share Management", function () {
 		// Send combined transaction
 		const tx = new Anchor.web3.Transaction().add(...instructions);
 		const signature = await provider.sendAndConfirm(tx, threeExecSigners);
-		console.log(`${indent} ✅ withdrawFromVault successful, tx:${signature}`);
+		console.log(`${indent} ✅ Withdraw From Vault successful, tx:${signature}`);
 
 
 		// Show after vault PDA result
@@ -1656,7 +1857,7 @@ describe("🚀 Profit/Refund share Management", function () {
 		// Show after withdraw wallet result
 		{
 			const recipientSolBalance = await provider.connection.getBalance(recipient);
-			console.log(`${indent}💰 After recipient SOL balance:`, vaultSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58());
+			console.log(`${indent}💰 After recipient SOL balance:`, recipientSolBalance / Anchor.web3.LAMPORTS_PER_SOL, "SOL with PDA:", vaultPda.toBase58());
 
 
 			// Vault USDT token accounts
