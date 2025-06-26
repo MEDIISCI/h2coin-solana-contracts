@@ -1912,7 +1912,36 @@ export type H2coinVaultShare = {
       ],
       "accounts": [
         {
-          "name": "investmentInfo"
+          "name": "investmentInfo",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  118,
+                  101,
+                  115,
+                  116,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "investment_info.investment_id",
+                "account": "investmentInfo"
+              },
+              {
+                "kind": "account",
+                "path": "investment_info.version",
+                "account": "investmentInfo"
+              }
+            ]
+          }
         },
         {
           "name": "usdtMint"

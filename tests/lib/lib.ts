@@ -19,16 +19,8 @@
 import fs from "fs";
 import path from "path";
 import * as Anchor from "@coral-xyz/anchor";
-import {
-	PublicKey,
-	Keypair,
-	Transaction,
-	sendAndConfirmTransaction,
-} from "@solana/web3.js";
-import {
-	getAssociatedTokenAddress,
-	createAssociatedTokenAccountInstruction,
-} from "@solana/spl-token";
+import { PublicKey,	Keypair } from "@solana/web3.js";
+
 import { H2coinVaultShare } from "../../target/types/h2coin_vault_share";
 import programKeypairJson from "../../target/deploy/h2coin_vault_share-keypair.json";
 

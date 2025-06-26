@@ -173,23 +173,21 @@ describe("h2coin whitelist-check", async () => {
 
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
-		console.log(`${indent}✅ (0) Initialize investment info:`, {
-			investmentId: bytesToFixedString(investmentInfo.investmentId),
-			version: Buffer.from(version).toString('hex'),
-			investmentType: Object.keys(investmentInfo.investmentType)[0],
-			stageRatio: investmentInfo.stageRatio.toString(),
-			investmentUpperLimit: investmentInfo.investmentUpperLimit.toString(),
-			executeWhitelist: investmentInfo.executeWhitelist.map(r=>r.toBase58()).join(', '),
-			updateWhitelist: investmentInfo.updateWhitelist.map(r=>r.toBase58()).join(', '),
-			withdrawWhitelist: investmentInfo.withdrawWhitelist.map(r=>r.toBase58()).join(', '),
-			state: Object.keys(investmentInfo.state)[0],
-			startAt: new Date(investmentInfo.startAt.toNumber()*1000),
-			endAt: new Date(investmentInfo.endAt.toNumber()*1000),
-			vaultPda: investmentInfo.vault.toBase58(),
-			solBalance: vaultInfo / Anchor.web3.LAMPORTS_PER_SOL,
-			usdtBalance: usdtBalance.value.uiAmountString ?? '0',
-			h2coinBalance: h2coinBalance.value.uiAmountString ?? '0',
-		});
+		console.log(`${indent}✅ investment info Summary:`);
+		console.log(`${indent}	investmentId:`, bytesToFixedString(investmentInfo.investmentId));
+		console.log(`${indent}	version:`, Buffer.from(version).toString('hex'));
+		console.log(`${indent}	investmentType:`, Object.keys(investmentInfo.investmentType)[0]);
+		console.log(`${indent}	stageRatio:`, investmentInfo.stageRatio.toString());
+		console.log(`${indent}	investmentUpperLimit:`, investmentInfo.investmentUpperLimit.toString());
+		console.log(`${indent}	executeWhitelist:`, investmentInfo.executeWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent}	updateWhitelist:`, investmentInfo.updateWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent}	withdrawWhitelist:`, investmentInfo.withdrawWhitelist.map((v: PublicKey) => v.toBase58()).join(', '));
+		console.log(`${indent}	state:`, Object.keys(investmentInfo.state)[0]);
+		console.log(`${indent}	startAt:`, new Date(investmentInfo.startAt.toNumber()*1000));
+		console.log(`${indent}	endAt:`, new Date(investmentInfo.endAt.toNumber()*1000));
+		console.log(`${indent}	solBalance:`, vaultInfo / Anchor.web3.LAMPORTS_PER_SOL);
+		console.log(`${indent}	usdtBalance:`, usdtBalance.value.uiAmountString ?? '0');
+		console.log(`${indent}	h2coinBalance:`, h2coinBalance.value.uiAmountString ?? '0');
 	});
 
 	it("(0) Replace whole with empty", async function() {

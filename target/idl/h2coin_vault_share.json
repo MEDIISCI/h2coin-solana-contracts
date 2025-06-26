@@ -1906,7 +1906,36 @@
       ],
       "accounts": [
         {
-          "name": "investment_info"
+          "name": "investment_info",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  110,
+                  118,
+                  101,
+                  115,
+                  116,
+                  109,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "investment_info.investment_id",
+                "account": "InvestmentInfo"
+              },
+              {
+                "kind": "account",
+                "path": "investment_info.version",
+                "account": "InvestmentInfo"
+              }
+            ]
+          }
         },
         {
           "name": "usdt_mint"

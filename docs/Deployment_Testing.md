@@ -116,9 +116,9 @@ To execute all tests:
 | npm mocha [`tests/devnet.execute_whitelist.test.ts`](../tests/devnet.execute_whitelist.test.ts) | Update execute whitelist |
 | npm mocha [`tests/devnet.update_whitelist.test.ts`](../tests/devnet.update_whitelist.test.ts) | Update Update whitelist |
 | npm mocha [`tests/devnet.withdraw_whitelist.test.ts`](../tests/devnet.withdraw_whitelist.test.ts) | Update withdraw whitelist |
-| npm mocha [`tests/devnet.investment_record.test1.ts`](../tests/devnet.investment_record.test1.ts) | Add invesment records with type `csr` |
-| npm mocha [`tests/devnet.investment_record.test2.ts`](../tests/devnet.investment_record.test2.ts) | Add invesment records with type `standard` |
-| npm mocha [`tests/devnet.profit_refund_share.test.ts`](../tests/devnet.profit_refund_share.test.ts) | Run profit and refund whole process |
+| npm mocha [`tests/devnet.investment_record.test1.ts`](../tests/devnet.investment_record.test1.ts) | Investment records with type `csr` were added, but share profit estimation is restricted for this investment type. |
+| npm mocha [`tests/devnet.investment_record.test2.ts`](../tests/devnet.investment_record.test2.ts) | Adds new investment records using type standard, and verifies the behavior when updating the wallet linked to an existing account_id.|
+| npm mocha [`tests/devnet.profit_refund_share.test.ts`](../tests/devnet.profit_refund_share.test.ts) | Run full profit and refund distribution process |
 
 ## 9\. **Upgrade the Program (if needed)**
 

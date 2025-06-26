@@ -48,7 +48,7 @@ describe("Profit/Refund share Management", function () {
 
 
 	const __investmentId = "02SEHzIZfBcpIZ5";
-	const __version = "c9060000";
+	const __version = "b9b63000";
 	
 	const yearIndex = 3;
 	const yearIndexBytes = Uint8Array.of(yearIndex);
@@ -234,20 +234,20 @@ describe("Profit/Refund share Management", function () {
 		const record_list = await program.account.investmentRecord.all([
 				{
 					memcmp: {
-						offset: 33, // discriminator 是前8位，接下來是 investment_id
+						offset: 33, // investment_id
 						bytes: bs58.encode(Buffer.from(investmentId)),
 					},
 				},
 				{
 					memcmp: {
-						offset: 33 + 15, // discriminator + investment_id
+						offset: 33 + 15, // version
 						bytes: bs58.encode(Buffer.from(version)),
 					},
 				},
 			]);
 		if (record_list.length === MAX_ENTRIES) {
 			is_record_add = true;
-			console.log(`${indent}✅ 1500 investment records has been added on chain!:`);
+			console.log(`${indent}✅ ${MAX_ENTRIES} investment records has been added on chain!:`);
 			return;
 		}
 
@@ -1315,8 +1315,6 @@ describe("Profit/Refund share Management", function () {
 				console.log(`${indent}Expected:`, expectedAddresses);
 				console.log(`${indent}ALT has:`, altAddresses);
 				throw new Error("❌ ALT content does not match expected wallet ATA list.");
-			} else {
-				console.log(`${indent}✅ ALT content matches expected recipient wallet ATAs`);
 			}
 
 			
@@ -1609,8 +1607,6 @@ describe("Profit/Refund share Management", function () {
 				console.log(`${indent}Expected:`, expectedAddresses);
 				console.log(`${indent}ALT has:`, altAddresses);
 				throw new Error("❌ ALT content does not match expected wallet ATA list.");
-			} else {
-				console.log(`${indent}✅ ALT content matches expected recipient wallet ATAs`);
 			}
 
 
@@ -1875,6 +1871,6 @@ describe("Profit/Refund share Management", function () {
 	});
 
 	function findMaxBatchId() {
-		return 50;
+		return MAX_ENTRIES/MAX_ENTRIES_PER_BATCH;
 	}
 });
