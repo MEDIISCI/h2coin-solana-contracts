@@ -1433,7 +1433,7 @@ describe("Profit/Refund share Management", function () {
 		const provider = R.provider;
 		const investmentId = R.investmentId;
 		const version = R.version;
-		const usdtMint = R.usdt_mint;
+		const h2coinMint = R.h2coin_mint;
 		const payer = provider.wallet.publicKey;
 
 
@@ -1461,7 +1461,7 @@ describe("Profit/Refund share Management", function () {
 			const addressATAs:PublicKey[] = [];
 			for (const entry of cache.entries) {
 				const recipient = entry.wallet;
-				const recipientAta = await getAssociatedTokenAddress(usdtMint, recipient);
+				const recipientAta = await getAssociatedTokenAddress(h2coinMint, recipient);
 
 				addressATAs.push(recipientAta);
 			}
@@ -1587,7 +1587,7 @@ describe("Profit/Refund share Management", function () {
 				walletATA.push(ata);
 			}
 			
-			const lookupTableAddress = R.lookupTableMap.get('profit')!.get(batchId);	
+			const lookupTableAddress = R.lookupTableMap.get('refund')!.get(batchId);	
 			if (!lookupTableAddress) {
 				console.warn(`${indent}⚠️ Missing lookup table for batch ${batchId}`);
 				continue;
@@ -1652,14 +1652,6 @@ describe("Profit/Refund share Management", function () {
 					recentBlockhash: blockhash.blockhash,
 					instructions: [computeIx, execIx],
 				}).compileToV0Message([lookupTableAccount]);
-
-				
-				console.log(`${indent}🔍 Instruction data size:`, execIx.data.length);
-				console.log(`${indent}🔍 Wallet ATA data size:`, walletATA.length);
-				console.log(`${indent}🔍 Number of remaining accounts:`, walletATA.length + 3);
-				console.log(`${indent}🔍 Number of static accounts:`, message.staticAccountKeys.length);
-				console.log(`${indent}🔍 Serialized transaction size:`, message.serialize().length);
-				console.log(`${indent}🔍 Message serialized size:`, message.serialize().length);
 
 	
 				const versionedTx = new Anchor.web3.VersionedTransaction(message);
