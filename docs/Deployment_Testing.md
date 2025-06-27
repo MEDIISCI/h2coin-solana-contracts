@@ -119,6 +119,7 @@ To execute all tests:
 | npm mocha [`tests/devnet.investment_record.test1.ts`](../tests/devnet.investment_record.test1.ts) | Investment records with type `csr` were added, but share profit estimation is restricted for this investment type. |
 | npm mocha [`tests/devnet.investment_record.test2.ts`](../tests/devnet.investment_record.test2.ts) | Adds new investment records using type standard, and verifies the behavior when updating the wallet linked to an existing account_id.|
 | npm mocha [`tests/devnet.profit_refund_share.test.ts`](../tests/devnet.profit_refund_share.test.ts) | Run full profit and refund distribution process |
+| vim [`tests/test_result.profit_refund.log`](../tests/test_result.profit_refund.log) | Test Result logs from profit_refund_share.test |
 
 ## 9\. **Upgrade the Program (if needed)**
 
