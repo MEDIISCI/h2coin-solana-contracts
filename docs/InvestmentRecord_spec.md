@@ -68,7 +68,7 @@ This ensures deterministic uniqueness for each investor entry.
 
 ### 📊 UML Class Diagram
 
-![InvestmentRecord Class Diagram](../diagrams/images/investment_record_class_diagram.png)
+![InvestmentRecord Class Diagram](./diagrams/images/investment_record_class_diagram.png)
 
 > InvestmentRecord belongs to InvestmentInfo and is linked via investment_id and version. For details, see the [InvestmentInfo](./InvestmentInfo_spec.md).
 

@@ -79,7 +79,7 @@ PDA = find_program_address(seeds, program_id)
 
 ### 📊 UML Class Diagram
 
-![InvestmentInfo Class Diagram](../diagrams/images/investment_info_class_diagram.png)
+![InvestmentInfo Class Diagram](./diagrams/images/investment_info_class_diagram.png)
 
 > InvestmentInfo has a one-to-many relationship with InvestmentRecord. For details, see the [InvestmentRecord Specifiction](./InvestmentRecord_spec.md).
 

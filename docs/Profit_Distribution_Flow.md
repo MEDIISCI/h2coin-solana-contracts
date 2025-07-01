@@ -23,11 +23,11 @@ Starting from the third year after investment completion, the company annually e
 
 ## Flow Diagram
 
-![Profit Distribution Flow](../diagrams/images/profit_distribution_flow.png)
+![Profit Distribution Flow](./diagrams/images/profit_distribution_flow.png)
 
 ## Annual Refund Distribution Flow Diagram
 
-![Annual Refund Distribution Flow](../diagrams/images/annual_refund_distribution_flow.png)
+![Annual Refund Distribution Flow](./diagrams/images/annual_refund_distribution_flow.png)
 
 ## Smart Contract Functions Details
 
