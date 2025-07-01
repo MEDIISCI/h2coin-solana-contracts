@@ -105,10 +105,10 @@ classDiagram
         +created_at: i64
     }
     InvestmentRecord --> Pubkey
-    InvestmentRecord --> InvestmentInfo : "多對一"
+    InvestmentRecord --> InvestmentInfo : "many-to-one (linked by investment_id & version)"
 ```
 
-> InvestmentRecord 屬於 [InvestmentInfo](./InvestmentInfo_spec.md)，透過 investment_id 與 version 關聯。
+> InvestmentRecord belongs to InvestmentInfo and is linked via investment_id and version. For details, see the [InvestmentInfo](./InvestmentInfo_spec.md).
 
 ---
 

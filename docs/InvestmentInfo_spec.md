@@ -5,8 +5,9 @@
 This document describes the structure and behavior of the InvestmentInfo account in the H2Coin Vault Share Protocol.
 
 **Related Documents:**
-- [InvestmentRecord Specification](./InvestmentRecord_spec.md) - Related record structure
-- [Profit Distribution Flow](./Profit_Distribution_Flow.md) - Overall system flow
+
+*   [InvestmentRecord Specification](./InvestmentRecord_spec.md) - Related record structure
+*   [Profit Distribution Flow](./Profit_Distribution_Flow.md) - Overall system flow
 
 ---
 
@@ -61,9 +62,9 @@ PDA = find_program_address(seeds, program_id)
 | `start_at` | `i64` | 8 | Investment start timestamp |
 | `end_at` | `i64` | 8 | Investment end timestamp |
 | `investment_upper_limit` | `u64` | 8 | Max USDT accepted |
-| `execute_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to execute profit/refund |
-| `update_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys authorized to update config |
-| `withdraw_whitelist` | `Vec<Pubkey>` | 4 + 32×5 = 164 | Pubkeys allowed to withdraw |
+| `execute_whitelist` | `Vec<Pubkey>` | 4 + (32 × 5) = 164 | Pubkeys authorized to execute profit/refund |
+| `update_whitelist` | `Vec<Pubkey>` | 4 + (32 × 5)  = 164 | Pubkeys authorized to update config |
+| `withdraw_whitelist` | `Vec<Pubkey>` | 4 + (32 × 5) = 164 | Pubkeys allowed to withdraw |
 | vault | `Pubkey` | 32 | Vault PDA for funds |
 | state | `InvestmentState` (`u16`) | 2 | Enum: `Init`, `Pending`, `Completed` |
 | `is_active` | `bool` | 1 | Whether investment is active |
@@ -78,7 +79,7 @@ PDA = find_program_address(seeds, program_id)
 
 ### 📊 UML Class Diagram
 
-```mermaid
+```
 classDiagram
     class InvestmentInfo {
         +investment_id: [u8; 15]
@@ -123,7 +124,7 @@ classDiagram
     InvestmentInfo --> InvestmentRecord : "1..*"
 ```
 
-> InvestmentInfo 與 InvestmentRecord 之間為一對多關係，詳細請見 [InvestmentRecord 規格](./InvestmentRecord_spec.md)。
+> InvestmentInfo has a one-to-many relationship with InvestmentRecord. For details, see the [InvestmentRecord Specifiction](./InvestmentRecord_spec.md).
 
 ---
 
@@ -148,4 +149,4 @@ Used to track current investment status.
     *   All stage values must be ≤ 100
     *   Non-contiguous years (non-zero followed by non-zero) are invalid
     *   Each stage's total ratio must be ≤ 100
-*   `
+*   \`
