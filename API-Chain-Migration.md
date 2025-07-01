@@ -23,10 +23,10 @@ This migration introduces structural changes to support tracking of Solana Addre
 
 | Column           | Type         | Description                                                        |
 | ---------------- | ------------ | ------------------------------------------------------------------ |
-| `lookup_table`   | VARCHAR(128) | Address Lookup Table public key (PDA), used as the primary key     |
-| `authority`      | VARCHAR(128) | The authority that can modify or close the ALT                     |
+| `lookup_table`   | VARCHAR(44) | Address Lookup Table public key (PDA), used as the primary key     |
+| `authority`      | VARCHAR(44) | The authority that can modify or close the ALT                     |
+| `payer`          | VARCHAR(44) | Account that paid for ALT creation                                 |
 | `recent_slot`    | BIGINT       | Slot used as a seed when creating the ALT (used in PDA derivation) |
-| `payer`          | VARCHAR(128) | Account that paid for ALT creation                                 |
 | `investment_id`  | VARCHAR(15)  | Matches state > InvestmentInfo > `investment_id` (optional)        |
 | `version`        | VARCHAR(4)   | Matches state > InvestmentInfo > `version` (optional)              |
 | `batch_id`       | INTEGER      | Matches state > InvestmentRecord > `batch_id` (optional)           |
@@ -49,10 +49,10 @@ This migration introduces structural changes to support tracking of Solana Addre
 ### PostgreSQL DDL `- address_lookup_tables`
 ```sql
 CREATE TABLE address_lookup_tables (
-    lookup_table     VARCHAR(128) PRIMARY KEY,
-    authority        VARCHAR(128) NOT NULL,
+    lookup_table     VARCHAR(44) PRIMARY KEY,
+    authority        VARCHAR(44) NOT NULL,
+    payer            VARCHAR(44) NOT NULL,
     recent_slot      BIGINT NOT NULL,
-    payer            VARCHAR(128) NOT NULL,
     investment_id    VARCHAR(15),
     version          VARCHAR(4),
     batch_id         INTEGER,
