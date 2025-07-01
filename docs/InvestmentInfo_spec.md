@@ -4,6 +4,10 @@
 
 This document describes the structure and behavior of the InvestmentInfo account in the H2Coin Vault Share Protocol.
 
+**Related Documents:**
+- [InvestmentRecord Specification](./InvestmentRecord_spec.md) - Related record structure
+- [Profit Distribution Flow](./Profit_Distribution_Flow.md) - Overall system flow
+
 ---
 
 ## 📦 Account: `InvestmentInfo`
@@ -64,13 +68,62 @@ PDA = find_program_address(seeds, program_id)
 | state | `InvestmentState` (`u16`) | 2 | Enum: `Init`, `Pending`, `Completed` |
 | `is_active` | `bool` | 1 | Whether investment is active |
 | `created_at` | `i64` | 8 | Creation timestamp |
-| **Total** | — | **655** | Total account size |
+| **Total** | — | **772** | Total account size |
 
 #### Constants
 
-*   `SIZE` = 655 bytes
+*   `SIZE` = 772 bytes
 *   `MAX_STAGE` = 3
 *   `MAX_WHITELIST_LEN` = 5
+
+### 📊 UML Class Diagram
+
+```mermaid
+classDiagram
+    class InvestmentInfo {
+        +investment_id: [u8; 15]
+        +version: [u8; 4]
+        +investment_type: InvestmentType
+        +stage_ratio: [[u8; 10]; 3]
+        +start_at: i64
+        +end_at: i64
+        +investment_upper_limit: u64
+        +execute_whitelist: Vec<Pubkey>
+        +update_whitelist: Vec<Pubkey>
+        +withdraw_whitelist: Vec<Pubkey>
+        +vault: Pubkey
+        +state: InvestmentState
+        +is_active: bool
+        +created_at: i64
+    }
+    class InvestmentType {
+        Standard
+        Csr
+    }
+    class InvestmentState {
+        Init
+        Pending
+        Completed
+    }
+    class InvestmentRecord {
+        +batch_id: u16
+        +record_id: u64
+        +account_id: [u8; 15]
+        +investment_id: [u8; 15]
+        +version: [u8; 4]
+        +wallet: Pubkey
+        +amount_usdt: u64
+        +amount_hcoin: u64
+        +stage: u8
+        +revoked_at: i64
+        +created_at: i64
+    }
+    InvestmentInfo --> InvestmentType
+    InvestmentInfo --> InvestmentState
+    InvestmentInfo --> InvestmentRecord : "1..*"
+```
+
+> InvestmentInfo 與 InvestmentRecord 之間為一對多關係，詳細請見 [InvestmentRecord 規格](./InvestmentRecord_spec.md)。
 
 ---
 
@@ -94,45 +147,5 @@ Used to track current investment status.
 *   `validate_stage_ratio()`
     *   All stage values must be ≤ 100
     *   Non-contiguous years (non-zero followed by non-zero) are invalid
-    *   Each stage’s total ratio must be ≤ 100
-*   `verify_signers_3_of_5()`
-    *   Input signer keys must match at least 3-of-5 from the whitelist
-    *   Enforced for both `execute_whitelist` and `update_whitelist`
-
----
-
-### 🛠 Instruction Behaviors
-
-*   `**initialize_investment_info**`
-    *   Creates an InvestmentInfo account
-    *   Validates whitelist length and PDA derivation
-    *   Assigns initial fields and vault PDA
-    *   Emits InvestmentInfoInitialized
-*   `**update_investment_info**`
-    *   Updates optional investment fields (type, ratio, upper limit)
-    *   Requires 3-of-5 update signers
-    *   Emits InvestmentUpdated
-*   `**completed_investment_info**`
-    *   Marks investment as completed
-    *   Requires 3-of-5 execute signers
-    *   Emits InvestmentCompleted
-*   `**deactivate_investment_info**`
-    *   Marks investment as deactivated (must be completed first)
-    *   Requires 3-of-5 execute signers
-    *   Emits InvestmentDeactivated
-*   `**patch_execute_whitelist**`
-    *   Replaces one address in `execute_whitelist`
-    *   Requires 3-of-5 execute signers + from/to accounts
-    *   Emits WhitelistUpdated
-*   `**patch_update_whitelist**`
-    *   Replaces one address in `update_whitelist`
-    *   Requires 3-of-5 update signers + from/to accounts
-    *   Emits WhitelistUpdated
-*   `**patch_withdraw_whitelist**`
-    *   Replaces the entire `withdraw_whitelist`
-    *   Requires 3-of-5 execute signers
-    *   Emits WithdrawWhitelistUpdated
-
----
-
-✅ This document is audit-ready and reflects the latest `InvestmentInfo` logic.
+    *   Each stage's total ratio must be ≤ 100
+*   `

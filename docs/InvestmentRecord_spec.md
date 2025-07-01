@@ -6,7 +6,7 @@ This document describes the structure, purpose, and instruction behaviors for th
 
 ## 📦 Account: `InvestmentRecord`
 
-The `InvestmentRecord` account represents a **single investor’s participation entry** within a specific investment project. Each record captures the USDT amount contributed, the H2COIN reward calculated, wallet info, and the investor’s designated investment stage.
+The `InvestmentRecord` account represents a **single investor's participation entry** within a specific investment project. Each record captures the USDT amount contributed, the H2COIN reward calculated, wallet info, and the investor's designated investment stage.
 
 This account:
 
@@ -65,6 +65,50 @@ This ensures deterministic uniqueness for each investor entry.
 | `created_at` | i64 | 8 | Record creation time |
 
 > ✅ **Total Size**: 128 bytes
+
+### 📊 UML Class Diagram
+
+```mermaid
+classDiagram
+    class InvestmentRecord {
+        +batch_id: u16
+        +record_id: u64
+        +account_id: [u8; 15]
+        +investment_id: [u8; 15]
+        +version: [u8; 4]
+        +wallet: Pubkey
+        +amount_usdt: u64
+        +amount_hcoin: u64
+        +stage: u8
+        +revoked_at: i64
+        +created_at: i64
+    }
+    class Pubkey {
+        +key: [u8; 32]
+        +to_base58() String
+        +from_base58(base58: String) Pubkey
+    }
+    class InvestmentInfo {
+        +investment_id: [u8; 15]
+        +version: [u8; 4]
+        +investment_type: InvestmentType
+        +stage_ratio: [[u8; 10]; 3]
+        +start_at: i64
+        +end_at: i64
+        +investment_upper_limit: u64
+        +execute_whitelist: Vec<Pubkey>
+        +update_whitelist: Vec<Pubkey>
+        +withdraw_whitelist: Vec<Pubkey>
+        +vault: Pubkey
+        +state: InvestmentState
+        +is_active: bool
+        +created_at: i64
+    }
+    InvestmentRecord --> Pubkey
+    InvestmentRecord --> InvestmentInfo : "多對一"
+```
+
+> InvestmentRecord 屬於 [InvestmentInfo](./InvestmentInfo_spec.md)，透過 investment_id 與 version 關聯。
 
 ---
 
