@@ -70,7 +70,7 @@ This ensures deterministic uniqueness for each investor entry.
 
 ![InvestmentRecord Class Diagram](../diagrams/images/investment_record_class_diagram.png)
 
-> InvestmentRecord 屬於 [InvestmentInfo](./InvestmentInfo_spec.md)，透過 investment_id 與 version 關聯。
+> InvestmentRecord belongs to InvestmentInfo and is linked via investment_id and version. For details, see the [InvestmentInfo](./InvestmentInfo_spec.md).
 
 ---
 

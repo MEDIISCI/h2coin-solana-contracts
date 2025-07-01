@@ -21,7 +21,7 @@ To ensure secure access and proper authority validation across instructions, the
 
 ### 🔑 Program-Derived Address (PDA) Validation
 
-*   PDAs are derived using consistent seed formats for `investment_info`, `investment_record`, `vault`, `cache`, and `alt_group` accounts.
+*   PDAs are derived using consistent seed formats for `investment_info`, `investment_record`, `vault and` `cache` accounts.
 *   Anchor’s `#[account(seeds = [...], bump)]` constraints ensure the PDA is valid and securely derived.
 
 ### 🪙 Token Authority
@@ -163,7 +163,7 @@ Creates and initializes an InvestmentRecord PDA for an individual investor, plus
 
 ### 🔑 PDA seeds
 
-> record: `["investment", investment_id, version, batch_id, record_id, account_id]`
+> record: `["record", investment_id, version, batch_id, record_id, account_id]`
 
 ### 📦 Account Metadata `- AddInvestmentRecords`
 
@@ -199,19 +199,19 @@ Creates and initializes an InvestmentRecord PDA for an individual investor, plus
 
 Patches wallet of existing records with same `account_id`.
 
-| Account | Type | Mutable | Description |
-| --- | --- | --- | --- |
-| `investment_info` | `Account<InvestmentInfo>` | ❌ | Validates authority & state; seeds `["investment", investment_id, version]` |
-| `usdt_mint` | `Account<Mint>` | ❌ | Ensures ATAs correspond to USDT mint |
-| `hcoin_mint` | `Account<Mint>` | ❌ | Ensures ATAs correspond to H2COIN mint |
-| `recipient_account` | `UncheckedAccount` | ❌ | Target wallet address to patch into records |
-| `recipient_usdt_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for `recipient_account` × `usdt_mint` |
-| `recipient_hcoin_account` | `Account<TokenAccount>` | ✅ (`init_if_needed`) | ATA for `recipient_account` × `hcoin_mint` |
-| `payer` | `Signer` | ✅ | Pays rent for new ATAs; must be in 3‑of‑5 **update\_whitelist** |
-| `rent` | `Sysvar<Rent>` | ❌ | Rent‑exemption calculations |
-| `system_program` | `Program<System>` | ❌ | Required by `init_if_needed` |
-| `token_program` | `Program<Token>` | ❌ | SPL‑Token CPI used by ATA creation |
-| `associated_token_program` | `Program<AssociatedToken>` | ❌ | Creates ATAs when absent |
+| Account | Type | Init | Mutable | Description |
+| --- | --- | --- | --- | --- |
+| `investment_info` | `Account<InvestmentInfo>` | ❌ | ❌ | Validates authority & state; seeds `["investment", investment_id, version]` |
+| `usdt_mint` | `Account<Mint>` | ❌ | ❌ | Ensures ATAs correspond to USDT mint |
+| `hcoin_mint` | `Account<Mint>` | ❌ | ❌ | Ensures ATAs correspond to H2COIN mint |
+| `recipient_account` | `UncheckedAccount` | ❌ | ❌ | Target wallet address to patch into records |
+| `recipient_usdt_account` | `Account<TokenAccount>` | ❌ | ✅ (`init_if_needed`) | ATA for `recipient_account` × `usdt_mint` |
+| `recipient_hcoin_account` | `Account<TokenAccount>` | ❌ | ✅ (`init_if_needed`) | ATA for `recipient_account` × `hcoin_mint` |
+| `payer` | `Signer` | ❌ | ✅ | Pays rent for new ATAs; must be in 3‑of‑5 **update\_whitelist** |
+| `rent` | `Sysvar<Rent>` | ❌ | ❌ | Rent‑exemption calculations |
+| `system_program` | `Program<System>` | ❌ | ❌ | Required by `init_if_needed` |
+| `token_program` | `Program<Token>` | ❌ | ❌ | SPL‑Token CPI used by ATA creation |
+| `associated_token_program` | `Program<AssociatedToken>` | ❌ | ❌ | Creates ATAs when absent |
 
 ---
 
@@ -219,11 +219,11 @@ Patches wallet of existing records with same `account_id`.
 
 Marks an `InvestmentRecord` as revoked.
 
-| Account | Type | Mutable | Description |
-| --- | --- | --- | --- |
-| `investment_info` | `Account<InvestmentInfo>` | ❌ | Parent of the record |
-| `investment_record` | `Account<InvestmentRecord>` | ✅ | Target to revoke |
-| `payer` | `Signer` | ✅ | Auth signer |
+| Account | Type | Init | Mutable | Description |
+| --- | --- | --- | --- | --- |
+| `investment_info` | `Account<InvestmentInfo>` | ❌ | ❌ | Parent of the record |
+| `investment_record` | `Account<InvestmentRecord>` | ❌ | ✅ | Target to revoke |
+| `payer` | `Signer` | ❌ | ✅ | Auth signer |
 
 ---
 

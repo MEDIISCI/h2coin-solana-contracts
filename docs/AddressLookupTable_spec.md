@@ -122,6 +122,3 @@ To understand the value of ALT and why it’s required, we analyze the memory co
 
 > ⚠️ **Note:** ALT provides read-only addresses for parsing records. Writable associated token accounts (ATAs) must still be passed explicitly via `remaining_accounts` during execution.
 
----
-
-ALT enables scalable Solana contract design, but must be used carefully to ensure consistency, traceability, and security of recipient batches.
