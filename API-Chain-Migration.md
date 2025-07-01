@@ -3,22 +3,46 @@ This migration introduces structural changes to support tracking of Solana Addre
 
 ## Following attributes are required to stored in off line database
 
-### Modify table `- investment`
+### New column on table `- investment`
 
 | Columns   | type     | Description |
 | --------- | -------- | ----------- |
 | verion    | VARCHAR(4) | match state > InvestmentInfo > verion |
 
+### PostgreSQL DDL `- investment`
+Insert a new column
+```sql
+ALTER TABLE investment_record
+ADD COLUMN "version" VARCHAR(4);
+```
+Add a new index
+```sql
+CREATE INDEX idx_investment_version ON investment ("id", "version");
+```
+---
 
-### Modify table `- investment_record`
+### New column on table `- investment_record`
 
 | Columns   | type     | Description |
 | --------- | -------- | ----------- |
 | batchId   | SMALLINT | match state > InvestmentRecord > batchId |
 | verion    | VARCHAR(4) | match state > InvestmentRecord > verion |
 
+### PostgreSQL DDL `- investment_record`
+Insert a new column
+```sql
+ALTER TABLE investment_record
+ADD COLUMN "batchId" VARCHAR(4);
 
 
+ALTER TABLE investment_record
+ADD COLUMN "version" VARCHAR(4);
+```
+Add a new index
+```
+CREATE INDEX idx_investment_record_batchId ON investment_record ("investmentId", "version", "batchId");
+```
+---
 ### New table `- address_lookup_tables`
 
 | Column           | Type         | Description                                                        |
@@ -60,8 +84,10 @@ CREATE TABLE address_lookup_tables (
     created_at       BIGINT DEFAULT (EXTRACT(EPOCH FROM NOW()))::BIGINT,
     extended_at      BIGINT DEFAULT 0,
     deactivated_at   BIGINT DEFAULT 0,
-    closed_at        BIGINT DEFAULT 0
+    closed_at        BIGINT DEFAULT 0,
+    UNIQUE (investment_id, version, batch_id, alt_type)
 );
 
+CREATE INDEX idx_lookup_by_inv_batch ON address_lookup_tables (investment_id, version, batch_id);
 
 ```
