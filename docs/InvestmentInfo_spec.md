@@ -78,50 +78,7 @@ PDA = find_program_address(seeds, program_id)
 
 ### 📊 UML Class Diagram
 
-```mermaid
-classDiagram
-    class InvestmentInfo {
-        +investment_id: [u8; 15]
-        +version: [u8; 4]
-        +investment_type: InvestmentType
-        +stage_ratio: [[u8; 10]; 3]
-        +start_at: i64
-        +end_at: i64
-        +investment_upper_limit: u64
-        +execute_whitelist: Vec<Pubkey>
-        +update_whitelist: Vec<Pubkey>
-        +withdraw_whitelist: Vec<Pubkey>
-        +vault: Pubkey
-        +state: InvestmentState
-        +is_active: bool
-        +created_at: i64
-    }
-    class InvestmentType {
-        Standard
-        Csr
-    }
-    class InvestmentState {
-        Init
-        Pending
-        Completed
-    }
-    class InvestmentRecord {
-        +batch_id: u16
-        +record_id: u64
-        +account_id: [u8; 15]
-        +investment_id: [u8; 15]
-        +version: [u8; 4]
-        +wallet: Pubkey
-        +amount_usdt: u64
-        +amount_hcoin: u64
-        +stage: u8
-        +revoked_at: i64
-        +created_at: i64
-    }
-    InvestmentInfo --> InvestmentType
-    InvestmentInfo --> InvestmentState
-    InvestmentInfo --> InvestmentRecord : "1..*"
-```
+![InvestmentInfo Class Diagram](../diagrams/images/investment_info_class_diagram.png)
 
 > InvestmentInfo 與 InvestmentRecord 之間為一對多關係，詳細請見 [InvestmentRecord 規格](./InvestmentRecord_spec.md)。
 

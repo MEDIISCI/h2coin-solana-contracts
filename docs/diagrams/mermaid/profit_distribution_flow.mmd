@@ -1,0 +1,54 @@
+flowchart TD
+    A[New Investment Project] --> B[Create Smart Contract on Solana]
+    B --> C[User Investment via Offline System]
+    C --> D[Transfer Funds to Designated Account]
+    D --> E[Company Organizes Investment Projects<br/>Every 7 Days]
+    E --> F[addInvestmentRecord<br/>Record Investment Data on Solana]
+    F --> G{Investment Period Complete?}
+    G -->|No| E
+    G -->|Yes| H[Monthly Profit Estimation]
+    H --> I[estimateProfitShare<br/>Calculate Profit Distribution]
+    I --> J[Company Notifies Accounting Team<br/>for Review]
+    J --> K[Accounting Review Process]
+    K --> L{Accounting Review Passed?}
+    L -->|No| M[Return to Company for Correction]
+    M --> I
+    L -->|Yes| N[Accounting Approval Confirmed]
+    N --> O[Company Initiates Squads Multisig]
+    O --> P[Notify Execute Whitelist Members<br/>via Squads]
+    P --> Q[Collect 3-of-5 Signatures<br/>from Execute Whitelist]
+    Q --> R{All Required Signatures<br/>Collected?}
+    R -->|No| S[Follow Up with Pending Signers]
+    S --> Q
+    R -->|Yes| T[executeProfitShare<br/>Distribute Profits]
+    T --> U[Profit Distribution Complete]
+    U --> V{3 Years After Investment<br/>Completion?}
+    V -->|No| W[Continue Monthly<br/>Profit Distribution]
+    W --> H
+    V -->|Yes| X[Start Annual Refund<br/>Distribution Process]
+    X --> Y[Annual Refund Distribution<br/>Complete - See Separate Flow]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style H fill:#e0f2f1
+    style I fill:#fff8e1
+    style J fill:#fff3e0
+    style K fill:#e8f5e8
+    style L fill:#ffebee
+    style M fill:#ffcdd2
+    style N fill:#c8e6c9
+    style O fill:#e1f5fe
+    style P fill:#f3e5f5
+    style Q fill:#fff8e1
+    style R fill:#ffebee
+    style S fill:#ffcdd2
+    style T fill:#f3e5f5
+    style U fill:#c8e6c9
+    style V fill:#fff3e0
+    style W fill:#e8f5e8
+    style X fill:#e0f2f1
+    style Y fill:#c8e6c9 
