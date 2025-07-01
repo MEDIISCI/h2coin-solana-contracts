@@ -196,3 +196,80 @@ let expect_year_index = (elapsed / SECONDS_PER_YEAR) as u8;
 ---
 
 ✅ This document is audit-ready and reflects the latest `RefundShareCache` logic.
+
+## 📊 RefundShareCache Class Diagram
+
+### Mermaid Source
+```mermaid
+%% See diagrams/mermaid/refund_share_cache_class_diagram.mmd for editable source
+classDiagram
+    class RefundShareCache {
+        +u16 batch_id
+        +u8 year_index
+        +[u8; 15] investment_id
+        +[u8; 4] version
+        +u64 subtotal_refund_hcoin
+        +u64 subtotal_estimate_sol
+        +i64 executed_at
+        +i64 created_at
+        +Vec~RefundEntry~ entries
+        +validate_execution()
+        +calculate_estimates()
+        +get_refund_percentage()
+    }
+
+    class RefundEntry {
+        +[u8; 15] account_id
+        +Pubkey wallet
+        +u64 amount_hcoin
+        +u8 stage
+        +Pubkey recipient_ata
+        +validate_stage()
+        +get_ata_address()
+    }
+
+    class InvestmentInfo {
+        +[u8; 15] investment_id
+        +[u8; 4] version
+        +InvestmentType investment_type
+        +[[u8; 10]; 3] stage_ratio
+        +i64 start_at
+        +i64 end_at
+        +u64 investment_upper_limit
+        +Vec~Pubkey~ execute_whitelist
+        +Vec~Pubkey~ update_whitelist
+        +Vec~Pubkey~ withdraw_whitelist
+        +Pubkey vault
+        +InvestmentState state
+        +bool is_active
+        +i64 created_at
+        +validate_stage_ratio()
+        +verify_signers_3_of_5()
+    }
+
+    class InvestmentType {
+        <<enumeration>>
+        Standard = 0
+        Csr = 1
+    }
+
+    class InvestmentState {
+        <<enumeration>>
+        Init = 0
+        Pending = 1
+        Completed = 999
+    }
+
+    RefundShareCache --> RefundEntry
+    RefundShareCache --> InvestmentInfo
+    InvestmentInfo --> InvestmentType
+    InvestmentInfo --> InvestmentState
+
+    note for RefundShareCache "PDA seeds: refund_cache, investment_id, version, batch_id, year_index"
+    note for RefundEntry "Entry size: 88 bytes, Max entries per batch: 30, Stage: 1-3"
+    note for RefundShareCache "Total size: 1826 bytes, Base size: 66 bytes, Year index: 0-9"
+```
+
+### Diagram
+
+![RefundShareCache Class Diagram](diagrams/images/refund_share_cache_class_diagram.svg)

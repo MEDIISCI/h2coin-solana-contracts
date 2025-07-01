@@ -11,7 +11,7 @@ This section summarizes all on-chain state accounts and their purpose in the H2C
 | State Account | Purpose |
 | --- | --- |
 | `InvestmentInfo` | Core configuration for an investment campaign, including whitelists, stage ratios, limits, and vault reference. |
-| `InvestmentRecord` | Stores each individual investor’s record for a specific investment, including USDT and H2COIN amounts. |
+| `InvestmentRecord` | Stores each individual investor's record for a specific investment, including USDT and H2COIN amounts. |
 | `ProfitShareCache` | Caches the precomputed profit-sharing entries for one batch, preventing duplicate computation or execution. |
 | `RefundShareCache` | Caches the estimated H2COIN refund entries for one batch-year based on the stage and year index. |
 
@@ -97,9 +97,9 @@ pub fn enforce_3_of_5_signers<'info>(
 
 ---
 
-## 📊  2. `InvestmentRecord`
+## 📊 2. `InvestmentRecord`
 
-Tracks each individual’s investment entry and stores a record of each investment unit made by an investor. 
+Tracks each individual's investment entry and stores a record of each investment unit made by an investor. 
 
 | Field | Type | Size (Bytes) | Description |
 | --- | --- | --- | --- |
@@ -119,7 +119,7 @@ Tracks each individual’s investment entry and stores a record of each investme
 
 #### Constants
 
-*     `Total SIZE` = 128 bytes
+*    `Total SIZE` = 128 bytes
 
 ---
 
@@ -165,7 +165,7 @@ Returns the refund percentage based on stage and year index. Returns 0 if inputs
 
 ---
 
-## 🔁 `4. RefundShareCache`
+## 🔁 4. `RefundShareCache`
 
 Stores refund estimation by year and stage for one batch.
 
@@ -210,3 +210,125 @@ fn get_refund_percentage(stage_ratio: &[[u8; 10]; 3], stage: u8, year_index: u8)
 ```
 
 Returns the refund percentage based on stage and year index. Returns 0 if inputs are invalid.
+
+## 📊 State Class Diagram
+
+### Mermaid Source
+```mermaid
+%% See diagrams/mermaid/state_class_diagram.mmd for editable source
+classDiagram
+    class InvestmentInfo {
+        +[u8; 15] investment_id
+        +[u8; 4] version
+        +InvestmentType investment_type
+        +[[u8; 10]; 3] stage_ratio
+        +i64 start_at
+        +i64 end_at
+        +u64 investment_upper_limit
+        +Vec~Pubkey~ execute_whitelist
+        +Vec~Pubkey~ update_whitelist
+        +Vec~Pubkey~ withdraw_whitelist
+        +Pubkey vault
+        +InvestmentState state
+        +bool is_active
+        +i64 created_at
+        +validate_stage_ratio()
+        +verify_signers_3_of_5()
+        +enforce_3_of_5_signers()
+    }
+
+    class InvestmentRecord {
+        +u16 batch_id
+        +u64 record_id
+        +[u8; 15] account_id
+        +[u8; 15] investment_id
+        +[u8; 4] version
+        +Pubkey wallet
+        +u64 amount_usdt
+        +u64 amount_hcoin
+        +u8 stage
+        +i64 revoked_at
+        +i64 created_at
+        +validate_investment()
+        +calculate_hcoin_allocation()
+    }
+
+    class ProfitShareCache {
+        +u16 batch_id
+        +[u8; 15] investment_id
+        +[u8; 4] version
+        +u64 subtotal_profit_usdt
+        +u64 subtotal_estimate_sol
+        +i64 executed_at
+        +i64 created_at
+        +Vec~ProfitEntry~ entries
+        +validate_execution()
+        +calculate_estimates()
+    }
+
+    class RefundShareCache {
+        +u16 batch_id
+        +u8 year_index
+        +[u8; 15] investment_id
+        +[u8; 4] version
+        +u64 subtotal_refund_hcoin
+        +u64 subtotal_estimate_sol
+        +i64 executed_at
+        +i64 created_at
+        +Vec~RefundEntry~ entries
+        +validate_execution()
+        +calculate_estimates()
+        +get_refund_percentage()
+    }
+
+    class ProfitEntry {
+        +[u8; 15] account_id
+        +Pubkey wallet
+        +u64 amount_usdt
+        +u16 ratio_bp
+        +Pubkey recipient_ata
+        +validate_ratio()
+        +get_ata_address()
+    }
+
+    class RefundEntry {
+        +[u8; 15] account_id
+        +Pubkey wallet
+        +u64 amount_hcoin
+        +u8 stage
+        +Pubkey recipient_ata
+        +validate_stage()
+        +get_ata_address()
+    }
+
+    class InvestmentType {
+        <<enumeration>>
+        Standard = 0
+        Csr = 1
+    }
+
+    class InvestmentState {
+        <<enumeration>>
+        Init = 0
+        Pending = 1
+        Completed = 999
+    }
+
+    InvestmentInfo --> InvestmentRecord
+    InvestmentInfo --> ProfitShareCache
+    InvestmentInfo --> RefundShareCache
+    ProfitShareCache --> ProfitEntry
+    RefundShareCache --> RefundEntry
+    InvestmentInfo --> InvestmentType
+    InvestmentInfo --> InvestmentState
+
+    note for InvestmentInfo "Size: 772 bytes, PDA seeds: investment_info, investment_id, version"
+    note for InvestmentRecord "Size: 128 bytes, PDA seeds: investment_record, investment_id, version, batch_id, record_id"
+    note for ProfitShareCache "Size: 1845 bytes, PDA seeds: profit_cache, investment_id, version, batch_id"
+    note for RefundShareCache "Size: 1826 bytes, PDA seeds: refund_cache, investment_id, version, batch_id, year_index"
+    note for ProfitEntry "Entry size: 89 bytes, Max entries per batch: 30"
+    note for RefundEntry "Entry size: 88 bytes, Max entries per batch: 30, Stage: 1-3"
+```
+
+### Diagram
+![State Class Diagram](diagrams/images/state_class_diagram.svg)
