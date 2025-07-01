@@ -79,7 +79,7 @@ The protocol emphasizes asset security through 3-of-5 multi-signature authorizat
 | [`InvestmentRecord_spec.md`](./docs/InvestmentRecord_spec.md) | Investor participation tracking |
 | [`ProfitShareCache_spec.md`](./docs/ProfitShareCache_spec.md) | Structure and purpose of profit share cache |
 | [`RefundShareCache_spec.md`](./docs/RefundShareCache_spec.md) | Refund logic and refund batch design |
-| [`Profit_Distribution_Flow.md`](./docs/Profit_Distribution_Flow.md) | Complete profit distribution and refund flow with UML diagrams |
+| [`Profit_Refund_Distribution_Flow.md`](./docs/Profit_Refund_Distribution_Flow.md) | Complete profit distribution and refund flow with UML diagrams |
 | [`specifications.md`](./docs/specifications.md) | Cross-module specifications and notes |
 
 ---
