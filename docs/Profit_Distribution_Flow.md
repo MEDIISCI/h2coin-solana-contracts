@@ -49,7 +49,7 @@ Starting from the third year after investment completion, the company annually e
 - `system_program` - System program for account creation
 
 **Signature Requirements**: 
-- **3-of-5 multisig** from `update_whitelist` or `execute_whitelist`
+- **3-of-5 multisig** from `update_whitelist`
 - At least 3 valid signatures from the 5-member whitelist
 
 ### 2. estimateProfitShare
