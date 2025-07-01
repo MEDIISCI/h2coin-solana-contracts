@@ -346,7 +346,7 @@ describe("Investment Record management", async () => {
 				const result1 = await program.account.investmentRecord.all([
 					{
 						memcmp: {
-							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							offset: 33, // discriminator is first 8 bytes, followed by investment_id
 							bytes: bs58.encode(Buffer.from(investmentId)),
 						},
 					},
@@ -369,7 +369,7 @@ describe("Investment Record management", async () => {
 					},
 					{
 						memcmp: {
-							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							offset: 33, // discriminator is first 8 bytes, followed by investment_id
 							bytes: bs58.encode(Buffer.from(investmentId)),
 						},
 					},
@@ -475,7 +475,7 @@ describe("Investment Record management", async () => {
 		}
 		
 
-		// ✅ 驗證
+		// ✅ Verification
 		try {
 			const ix = await program.methods
 			.updateInvestmentRecordWallets(fix_account_id)
@@ -1259,7 +1259,7 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(9) Create ALT from Profit Share Cache entries", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 20); // 20 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Create ALT from ProfitShareCache entries prgram...`);
 
@@ -1564,8 +1564,8 @@ describe("Investment Record management", async () => {
 					})),
 					...walletATA.map((kp) => ({
 						pubkey: kp,
-						isWritable: true,  // ATA 不需要寫入
-						isSigner: false,    // 也不會簽名
+						isWritable: true,  // ATA does not need to be writable
+						isSigner: false,    // and will not sign
 					}))
 				])
 				.instruction();
@@ -1622,7 +1622,7 @@ describe("Investment Record management", async () => {
 		}
 	});
 	it("(12) Create ALT from Refund Share Cache entries", async function () {
-		this.timeout(1000 * 60 * 20); // 20 分鐘 timeout
+		this.timeout(1000 * 60 * 20); // 20 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Create ALT from Refund Share Cache entries prgram...`);
 
@@ -1671,7 +1671,7 @@ describe("Investment Record management", async () => {
 		console.log(`${indent}✅ Created Refund ALT address: ${lookupTableAddress.toBase58()} at batchId = ${batchId}, signature=${signature}`);
 
 
-		const BATCH_SIZE = 20; // 根據測試可調整為 20~30
+		const BATCH_SIZE = 20; // Adjust to 20~30 based on testing
 		for (let i = 0; i < addressATAs.length; i += BATCH_SIZE) {
 			const chunk = addressATAs.slice(i, i + BATCH_SIZE);
 
@@ -1713,7 +1713,7 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(13) Execute Refund Share using ALT", async function () {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Process Execute Refund Share using ALT program...`);
@@ -1753,7 +1753,7 @@ describe("Investment Record management", async () => {
 		try {
 			const vaultTokenAta = await getAssociatedTokenAddress(h2coin_mint, vaultPda, true);
 
-			// 準備 recipient ATA
+			// Prepare recipient ATA
 			const walletATA:PublicKey[] = [];
 			const cache = await program.account.refundShareCache.fetch(cachePda);
 			for (const entry of cache.entries) {

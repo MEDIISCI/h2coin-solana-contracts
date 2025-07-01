@@ -49,7 +49,7 @@ describe("h2coin whitelist-check", async () => {
 	const threeUpdateSigners = loadUpdateWhitelistKeypairs().slice(0, 3);
 
 	before("Initialize investment info with CSR type", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Initialize invesgtment info with CSR type program...`);
 		
@@ -190,10 +190,10 @@ describe("h2coin whitelist-check", async () => {
 		console.log(`${indent}	h2coinBalance:`, h2coinBalance.value.uiAmountString ?? '0');
 	});
 
-	it("(0) Replace whole with empty", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+	it("(0) Replace existing key with other existing key", async function() {
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Replace whole with empty program...`);
+		console.log(`🚀 Replace existing key with other existing key program...`);
 
 
 		const program = R.program;
@@ -255,10 +255,10 @@ describe("h2coin whitelist-check", async () => {
 		}
 	});
 
-	it("(1) Replace whole with update whitelist signer", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+	it("(1) Replace existing key with self", async function() {
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Replace whole with update whitelist signer program...`);
+		console.log(`🚀 Replace existing key with self program...`);
 
 		const program = R.program;
 		const investmentInfoPda = R.investmentInfoPda;
@@ -320,11 +320,10 @@ describe("h2coin whitelist-check", async () => {
 		}
 	});
 
-	it("(2) Replace whole", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+	it("(2) Replace existing key with new key", async function() {
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
-		console.log(`🚀 Replace whole program...`);
-
+		console.log(`🚀 Replace existing key with new key program...`);
 
 		const program = R.program;
 		const provider = R.provider;
@@ -359,12 +358,12 @@ describe("h2coin whitelist-check", async () => {
 			.signers(threeExecSigners)
 			.preInstructions([modifyComputeUnits])
 			.rpc();		
-		} catch (e:any) {
+		} catch (e:any) {			
 			caught = true;
 			expect(e).to.have.property("error");
-			expect(e.error.errorCode.code).to.equal("WhitelistAddressExists");
+			expect(e.error.errorCode.code).to.equal("UnauthorizedSigner");
 		}
-
+	
 
 		const investmentInfo = await program.account.investmentInfo.fetch(investmentInfoPda);
 		const withdrawWhitelist = investmentInfo.withdrawWhitelist;
@@ -383,7 +382,7 @@ describe("h2coin whitelist-check", async () => {
 		}
 	});
 	it("(3) Reset to original whitelist", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Reset to original whitelist program...`);
 

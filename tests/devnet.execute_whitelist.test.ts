@@ -45,7 +45,7 @@ describe("📃h2coin whitelist-check", async () => {
 
 
 	before("Initialize investment info with CSR type", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
 		
@@ -187,7 +187,7 @@ describe("📃h2coin whitelist-check", async () => {
 	});
 
 	it("(0) Replace existing key with other existing key", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Replace existing key with other existing key program...`);
 
@@ -253,7 +253,7 @@ describe("📃h2coin whitelist-check", async () => {
 	});
 
 	it("(1) Replace existing key with self", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Replace existing key with self program...`);
 
@@ -317,7 +317,7 @@ describe("📃h2coin whitelist-check", async () => {
 	});
 
 	it("(2) Replace existing key with new key", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Replace existing key with new key...`);
 
@@ -391,7 +391,7 @@ describe("📃h2coin whitelist-check", async () => {
 	});
 
 	it("(3) Reset to original whitelist", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Reset to original whitelist progress...`);
 

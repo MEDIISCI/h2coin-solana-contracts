@@ -49,7 +49,7 @@ describe("Investment Info", async function() {
 	
 
 	it("(0) Initialize investment info", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Initialize invesgtment info program...`);
 		
@@ -204,7 +204,7 @@ describe("Investment Info", async function() {
 	});
 
 	it("(1) Fail initialize investment info when it has been initialized", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Fail initialize investment info when it has been initialized program...`);
 		
@@ -363,7 +363,7 @@ describe("Investment Info", async function() {
 	});
 
 	it("(2) Update investment info works", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Update investment info works program...`);
 
@@ -433,7 +433,7 @@ describe("Investment Info", async function() {
 	});
 
 	it("(3) Set investment state to complete", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout		
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout		
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Set investment state to complete program...`);
 
@@ -479,7 +479,7 @@ describe("Investment Info", async function() {
 	});
 
 	it("(4) Fail update investment info when state is completed", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Fail update investment info when state is completed program...`);
 
@@ -546,7 +546,7 @@ describe("Investment Info", async function() {
 	});
 
 	it("(5) Set investment state to deactivated", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Set investment state to deactived program...`);
 
@@ -588,7 +588,7 @@ describe("Investment Info", async function() {
 	});
 	
 	it("(6) Replace existing key with new key", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`🚀 Replace existing key with new key program...`);
 		

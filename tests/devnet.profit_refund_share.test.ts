@@ -234,7 +234,7 @@ describe("Profit/Refund share Management", function () {
 		const record_list = await program.account.investmentRecord.all([
 				{
 					memcmp: {
-						offset: 33, // investment_id
+						offset: 33, // discriminator is first 8 bytes, followed by investment_id
 						bytes: bs58.encode(Buffer.from(investmentId)),
 					},
 				},
@@ -375,7 +375,7 @@ describe("Profit/Refund share Management", function () {
 		const result1 = await program.account.investmentRecord.all([
 			{
 				memcmp: {
-					offset: 33, // discriminator 是前8位，接下來是 investment_id
+					offset: 33, // discriminator is first 8 bytes, followed by investment_id
 					bytes: bs58.encode(Buffer.from(investmentId)),
 				},
 			},
@@ -398,7 +398,7 @@ describe("Profit/Refund share Management", function () {
 			},
 			{
 				memcmp: {
-					offset: 33, // discriminator 是前8位，接下來是 investment_id
+					offset: 33, // discriminator is first 8 bytes, followed by investment_id
 					bytes: bs58.encode(Buffer.from(investmentId)),
 				},
 			},
@@ -488,7 +488,7 @@ describe("Profit/Refund share Management", function () {
 				},
 				{
 					memcmp: {
-						offset: 33, // investment_id
+						offset: 33, // discriminator is first 8 bytes, followed by investment_id
 						bytes: bs58.encode(Buffer.from(investmentId)),
 					},
 				},

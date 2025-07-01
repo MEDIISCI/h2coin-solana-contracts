@@ -64,7 +64,7 @@ describe("Investment Record management", async () => {
 
 
 	before("Initialize investment info with CSR type", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Initialize invesgtment info with CSR type program...`);
 		
@@ -346,7 +346,7 @@ describe("Investment Record management", async () => {
 				const result1 = await program.account.investmentRecord.all([
 					{
 						memcmp: {
-							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							offset: 33, // discriminator is first 8 bytes, followed by investment_id
 							bytes: bs58.encode(Buffer.from(investmentId)),
 						},
 					},
@@ -369,7 +369,7 @@ describe("Investment Record management", async () => {
 					},
 					{
 						memcmp: {
-							offset: 33, // discriminator 是前8位，接下來是 investment_id
+							offset: 33, // discriminator is first 8 bytes, followed by investment_id
 							bytes: bs58.encode(Buffer.from(investmentId)),
 						},
 					},
@@ -475,7 +475,7 @@ describe("Investment Record management", async () => {
 			getAssociatedTokenAddress(h2coin_mint, new_wallet)
 		]);
 
-		// ✅ 驗證
+		// ✅ Verification
 		try {
 			const ix = await program.methods
 			.updateInvestmentRecordWallets(
@@ -564,7 +564,7 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(2) Revoke investment record", async function() {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Revoke investment record program...`);
 
@@ -779,7 +779,7 @@ describe("Investment Record management", async () => {
 			getAssociatedTokenAddress(h2coin_mint, new_wallet)
 		]);
 
-		// ✅ 驗證
+		// ✅ Verification
 		try {
 			const ix = await program.methods
 			.updateInvestmentRecordWallets(
@@ -941,7 +941,7 @@ describe("Investment Record management", async () => {
 	});
 
 	it("(6) Estimate profit share using ALT with csr type", async function () {
-		this.timeout(1000 * 60 * 5); // 5 分鐘 timeout
+		this.timeout(1000 * 60 * 5); // 5 minutes timeout
 		const indent = ResolveIndent(this, 1);
 		console.log(`${indent}📃 Estimate profit share using ALT with csr type program...`);
 		
