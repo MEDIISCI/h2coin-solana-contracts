@@ -12,11 +12,7 @@ classDiagram
         +revoked_at: i64
         +created_at: i64
     }
-    class Pubkey {
-        +key: [u8; 32]
-        +to_base58() String
-        +from_base58(base58: String) Pubkey
-    }
+    class Pubkey
     class InvestmentInfo {
         +investment_id: [u8; 15]
         +version: [u8; 4]

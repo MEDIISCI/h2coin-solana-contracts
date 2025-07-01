@@ -1,47 +1,47 @@
 # 📊 Diagrams Directory
 
-這個目錄包含了 H2Coin Vault Share Protocol 的所有圖表文件。
+This directory contains all diagram files for the H2Coin Vault Share Protocol.
 
-## 📁 目錄結構
+## 📁 Directory Structure
 
 ```
 diagrams/
-├── mermaid/          # Mermaid 原始文件 (.mmd)
-├── images/           # 生成的圖片文件 (.png)
-└── README.md         # 本說明文件
+├── mermaid/          # Mermaid source files (.mmd)
+├── images/           # Generated image files (.png)
+└── README.md         # This documentation file
 ```
 
-## 📋 圖表列表
+## 📋 Diagram List
 
 ### 1. InvestmentRecord Class Diagram
-- **文件**: `mermaid/investment_record_class_diagram.mmd`
-- **圖片**: `images/investment_record_class_diagram.png`
-- **描述**: InvestmentRecord 結構的 UML 類圖，顯示與 Pubkey 和 InvestmentInfo 的關係
+- **File**: `mermaid/investment_record_class_diagram.mmd`
+- **Image**: `images/investment_record_class_diagram.png`
+- **Description**: UML class diagram of InvestmentRecord structure, showing relationships with Pubkey and InvestmentInfo
 
 ### 2. InvestmentInfo Class Diagram
-- **文件**: `mermaid/investment_info_class_diagram.mmd`
-- **圖片**: `images/investment_info_class_diagram.png`
-- **描述**: InvestmentInfo 結構的 UML 類圖，顯示與 InvestmentType、InvestmentState 和 InvestmentRecord 的關係
+- **File**: `mermaid/investment_info_class_diagram.mmd`
+- **Image**: `images/investment_info_class_diagram.png`
+- **Description**: UML class diagram of InvestmentInfo structure, showing relationships with InvestmentType, InvestmentState and InvestmentRecord
 
 ### 3. Profit Distribution Flow
-- **文件**: `mermaid/profit_distribution_flow.mmd`
-- **圖片**: `images/profit_distribution_flow.png`
-- **描述**: 利潤分配流程圖，顯示從投資項目創建到利潤分配的完整流程
+- **File**: `mermaid/profit_distribution_flow.mmd`
+- **Image**: `images/profit_distribution_flow.png`
+- **Description**: Profit distribution flow diagram, showing the complete process from investment project creation to profit distribution
 
 ### 4. Annual Refund Distribution Flow
-- **文件**: `mermaid/annual_refund_distribution_flow.mmd`
-- **圖片**: `images/annual_refund_distribution_flow.png`
-- **描述**: 年度退款分配流程圖，顯示從第三年開始的年度 H2COIN 退款分配流程
+- **File**: `mermaid/annual_refund_distribution_flow.mmd`
+- **Image**: `images/annual_refund_distribution_flow.png`
+- **Description**: Annual refund distribution flow diagram, showing the annual H2COIN refund distribution process starting from the third year
 
-## 🔧 如何更新圖表
+## 🔧 How to Update Diagrams
 
-1. 編輯對應的 `.mmd` 文件
-2. 使用 mermaid-cli 重新生成圖片：
+1. Edit the corresponding `.mmd` file
+2. Use mermaid-cli to regenerate the image:
    ```bash
    mmdc -i mermaid/filename.mmd -o images/filename.png
    ```
 
-## 📦 依賴工具
+## 📦 Dependencies
 
-- `@mermaid-js/mermaid-cli`: 用於將 Mermaid 文件轉換為圖片
-- 安裝命令: `npm install -g @mermaid-js/mermaid-cli` 
+- `@mermaid-js/mermaid-cli`: Used to convert Mermaid files to images
+- Installation command: `npm install -g @mermaid-js/mermaid-cli` 
