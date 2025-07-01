@@ -101,13 +101,13 @@ This table lists all `#[derive(Accounts)]` context structs used in the H2Coin Va
 | Function Name | Purpose | update\_whitelist (3-of-5) | execute\_whitelist (3-of-5) |
 | --- | --- | --- | --- |
 | `initialize_investment_info` | Create a new investment with ID, version, whitelist, and vault | — | — |
-| `update_investment_info` | Update version, state, or upper limit | ✅ | — |
-| `update_execute_wallet` | Replace one signer in execute whitelist | — | ✅ |
-| `update_update_wallet` | Replace one signer in update whitelist | ✅ | — |
-| `update_withdraw_wallet` | Replace one signer in withdraw whitelist | — | ✅ |
-| `update_investor_wallet` | Modify an investor's wallet | ✅ | — |
+| `update_investment_info` | Update stage ratio and upper limit | ✅ | — |
+| `patch_execute_wallet` | Replace one signer in execute whitelist | — | ✅ |
+| `patch_update_wallet` | Replace one signer in update whitelist | ✅ | — |
+| `patch_withdraw_wallet` | Replace signers in withdraw whitelist | — | ✅ |
+| `add_investment_records` | Create a investment record | ✅ | — |
+| `update_investment_record_wallets` | Modify an investment record's wallet | ✅ | — |
 | `revoke_investment_record` | Mark an investment record as revoked | ✅ | — |
-| `add_investment_records` | Create multiple investment records and update totals | ✅ | — |
 | `estimate_profit_share` | Aggregate records, calculate ratio & write to cache | Any whitelist signer | Any whitelist signer |
 | `execute_profit_share` | Transfer USDT from PDA to recipients using associated token account | — | ✅ |
 | `estimate_refund_share` | Aggregate refund records by stage & year, write to cache | Any whitelist signer | Any whitelist signer |
