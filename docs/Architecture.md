@@ -61,12 +61,14 @@ The **H2Coin Vault Share Protocol** leverages Solana’s **Address Lookup Table 
 
 ## 🧩 State Structs Overview
 
-| Struct Name | Purpose | Key Fields |
+| **Struct Name** | **Description** | **Key Fields** |
 | --- | --- | --- |
-| `InvestmentInfo` | Represents a single investment project, including whitelist, vault, and state. | `investment_id`, `vault`, `execute/update/withdraw_whitelist`, `state`, `investment_actual_amount` |
-| `InvestmentRecord` | Tracks a specific investment entry made by an investor. | `investment_record_id`, `account_id`, `amount_usdt`, `investment_stage` |
-| `ProfitShareCache` | Caches a snapshot of the profit-sharing plan before execution. | `total_profit_share`, `estimate_sol`, `entries: Vec<ProfitEntry>` |
-| `ProfitEntry` | Represents a single investor’s share in a profit distribution. | `account_id`, `wallet`, `amount_usdt`, `ratio_bp` |
+| `InvestmentInfo` | Represents a single investment project, including metadata, vault, and access control. | `investment_id`, `vault`, `state`, `investment_actual_amount`, `execute/update/withdraw_whitelist` |
+| `InvestmentRecord` | Records an individual investor’s contribution to a specific investment project. | `investment_record_id`, `account_id`, `amount_usdt`, `investment_stage` |
+| `ProfitShareCache` | Stores a precomputed snapshot of profit-sharing distribution for batch execution. | `total_profit_share`, `subtotal_estimate_sol`, `subtotal_profit_usdt` `entries: Vec<ProfitEntry>` |
+| `ProfitEntry` | Defines an individual investor’s share of the profit in a distribution round. | `account_id`, `wallet`, `amount_usdt`, `ratio_bp` |
+| `RefundShareCache` | Stores a precomputed snapshot of refund-sharing distribution for a given year. | `year_index`, `subtotal_estimate_sol`, `subtotal_refund_hcoin`, `entries: Vec<RefundEntry>` |
+| `RefundEntry` | Defines an individual investor’s refund share for a specific stage and year. | `account_id`, `wallet`, `amount_hcoin`, `stage` |
 
 ---
 
@@ -105,6 +107,8 @@ This table lists all `#[derive(Accounts)]` context structs used in the H2Coin Va
 | `patch_execute_wallet` | Replace one signer in execute whitelist | — | ✅ |
 | `patch_update_wallet` | Replace one signer in update whitelist | ✅ | — |
 | `patch_withdraw_wallet` | Replace signers in withdraw whitelist | — | ✅ |
+| `completed_investment_info` | Mark state as completed | ✅ | — |
+| `deactivate_investment_info` | Set is\_active to be false | ✅ | — |
 | `add_investment_records` | Create a investment record | ✅ | — |
 | `update_investment_record_wallets` | Modify an investment record's wallet | ✅ | — |
 | `revoke_investment_record` | Mark an investment record as revoked | ✅ | — |
