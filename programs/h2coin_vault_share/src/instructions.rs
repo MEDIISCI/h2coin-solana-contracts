@@ -302,7 +302,6 @@ pub fn update_investment_info(
 
     // AUDIT: Log update information for audit trail
     msg!("🟢 Update triggered by: {}", ctx.accounts.payer.key());
-    msg!("🟢 update_investment_info: {:?}", info);
 
     // AUDIT: Emit update event for audit trail
     emit!(InvestmentUpdated {
@@ -2188,7 +2187,7 @@ fn transfer_token_checked<'info>(
     // AUDIT: Validate recipient account ownership for security
     require!(
         to.owner == &TOKEN_PROGRAM_ID,
-        ErrorCode::InvalidRecipientATA
+        ErrorCode::InvalidRecipientOwner
     );
 
     let cpi_accounts = TransferChecked {

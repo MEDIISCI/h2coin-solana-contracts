@@ -45,7 +45,7 @@ use crate::error::ErrorCode;
 /// - Comprehensive input validation
 /// - State consistency enforcement
 #[account]
-#[derive(Debug)]
+#[derive()]
 pub struct InvestmentInfo {
     /// Unique investment identifier (15 bytes)
     /// AUDIT: Must be exactly 15 bytes, used for PDA derivation
@@ -374,7 +374,7 @@ impl TryFrom<u16> for InvestmentState {
 /// - Comprehensive validation
 /// - Audit trail with timestamps
 #[account]
-#[derive(Debug)]
+#[derive()]
 pub struct InvestmentRecord {
     /// Batch identifier for grouping records
     /// AUDIT: Used for batch processing and cache creation
@@ -484,7 +484,7 @@ impl InvestmentRecord {
 /// - Execution tracking prevents double-spending
 /// - Comprehensive validation
 #[account]
-#[derive(Debug)]
+#[derive()]
 pub struct ProfitShareCache {
     /// Batch identifier for this profit share entry
     /// AUDIT: Links cache to specific batch of records
@@ -538,7 +538,7 @@ pub struct ProfitShareCache {
 /// - Validates profit calculations
 /// - Ensures proper recipient identification
 /// - Prevents calculation errors
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct ProfitEntry {
     /// Account identifier (15 bytes)
     /// AUDIT: Links entry to specific account
@@ -596,7 +596,7 @@ impl ProfitShareCache {
         8 +  // subtotal_estimate_sol
         8 +  // executed_at
         8 +  // created_at
-        4 + (MAX_ENTRIES_PER_BATCH * ENTRY_SIZE); // entries
+        4 + (MAX_ENTRIES_PER_BATCH * Self::ENTRY_SIZE); // entries
 }
 
 /// Refund share cache account for batch processing
@@ -614,7 +614,7 @@ impl ProfitShareCache {
 /// - Execution tracking prevents double-spending
 /// - Comprehensive validation
 #[account]
-#[derive(Debug)]
+#[derive()]
 pub struct RefundShareCache {
     /// Batch identifier for this refund share entry
     /// AUDIT: Links cache to specific batch of records
@@ -673,7 +673,7 @@ pub struct RefundShareCache {
 /// - Validates refund calculations
 /// - Ensures proper recipient identification
 /// - Prevents calculation errors
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct RefundEntry {
     /// Account identifier (15 bytes)
     /// AUDIT: Links entry to specific account
@@ -733,7 +733,7 @@ impl RefundShareCache {
         8 +  // subtotal_estimate_sol
         8 +  // executed_at
         8 +  // created_at
-        4 + (MAX_ENTRIES_PER_BATCH * ENTRY_SIZE); // entries
+        4 + (MAX_ENTRIES_PER_BATCH * Self::ENTRY_SIZE); // entries
 
     /// Calculate refund percentage for given stage and year
     /// 
