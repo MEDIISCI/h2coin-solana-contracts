@@ -92,7 +92,7 @@ pub struct InitializeInvestmentInfo<'info> {
         space = 0,
         owner = system_program.key() 
     )]
-    /// CHECK: This vault PDA holds SOL, no deserialization needed
+    ///   CHECK: This vault PDA holds SOL, no deserialization needed
     pub vault: UncheckedAccount<'info>,
         
     /// Vault associated token account for USDT
@@ -441,7 +441,7 @@ pub struct AddInvestmentRecords<'info> {
     /// AUDIT CRITICAL:
     /// - Source of token transfers to vault
     /// - Manually validated in instruction
-    /// CHECK: recipient lamport target, manually validated
+    ///   CHECK: recipient lamport target, manually validated
     pub recipient_account: UncheckedAccount<'info>,
 
     /// Recipient associated token account for USDT
@@ -547,7 +547,7 @@ pub struct UpdateInvestmentRecordWallets<'info> {
     /// AUDIT CRITICAL:
     /// - New destination for future distributions
     /// - Manually validated in instruction
-    /// CHECK: recipient lamport target, manually validated
+    ///   CHECK: recipient lamport target, manually validated
     pub recipient_account: UncheckedAccount<'info>,
 
     /// New recipient associated token account for USDT
@@ -870,7 +870,7 @@ pub struct ExecuteProfitShare<'info> {
         ],
         bump
     )]
-    /// CHECK: This is a derived vault PDA. It is only used as a token transfer authority and validated via seeds.
+    ///   CHECK: This is a derived vault PDA. It is only used as a token transfer authority and validated via seeds.
     pub vault: AccountInfo<'info>,
 
     /// Vault associated token account for USDT
@@ -981,7 +981,7 @@ pub struct ExecuteRefundShare<'info> {
         ],
         bump
     )]
-    /// CHECK: This is a derived vault PDA. It is only used as a token transfer authority and validated via seeds.
+    ///   CHECK: This is a derived vault PDA. It is only used as a token transfer authority and validated via seeds.
     pub vault: AccountInfo<'info>,
 
     /// Vault associated token account for H2COIN
@@ -1067,7 +1067,7 @@ pub struct DepositSolToVault<'info> {
         ],
         bump
     )]
-    /// CHECK: This vault PDA holds SOL, no deserialization needed
+    ///   CHECK: This vault PDA holds SOL, no deserialization needed
     pub vault: AccountInfo<'info>,
 
     /// Transaction payer account
@@ -1141,7 +1141,7 @@ pub struct DepositTokenToVault<'info> {
         ],
         bump
     )]
-    /// CHECK: This vault PDA holds SOL, no deserialization needed
+    ///   CHECK: This vault PDA holds SOL, no deserialization needed
     pub vault: AccountInfo<'info>,
 
     /// Vault associated token account for destination
@@ -1234,7 +1234,7 @@ pub struct WithdrawFromVault<'info> {
         ],
         bump
     )]
-    /// CHECK: This is a derived vault PDA. It is only used as a token transfer authority and validated via seeds.
+    ///   CHECK: This is a derived vault PDA. It is only used as a token transfer authority and validated via seeds.
     pub vault: AccountInfo<'info>,
 
     /// Vault associated token account for USDT
@@ -1270,7 +1270,6 @@ pub struct WithdrawFromVault<'info> {
     /// - Must be in withdraw whitelist
     /// - Manually validated in instruction
     #[account(mut)]
-    /// CHECK: recipient passed and manually verified
     pub recipient_account: UncheckedAccount<'info>,
 
     /// Recipient associated token account for USDT
