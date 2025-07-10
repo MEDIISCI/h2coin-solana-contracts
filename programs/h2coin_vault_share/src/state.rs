@@ -750,7 +750,7 @@ impl RefundShareCache {
     /// - Maintains calculation consistency
     pub fn get_refund_percentage(stage_ratio: &[[u8; 10]; 3], stage: u8, year_index: u8) -> u8 {
         // Validate stage index (1-based, convert to 0-based)
-        if stage < 1 || stage > 3 {
+        if !(1..=MAX_STAGE).contains(&(stage as usize)) {
             return 0;
         }
         
